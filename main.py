@@ -23,8 +23,11 @@ if db_url and db_url.startswith("postgres://"):
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-print("DB URL:", db_url)
+db.init_app(app)
 
+# ✅ حط هنا
+with app.app_context():
+    db.create_all()
 # ✅ CORS
 CORS(app, supports_credentials=True, origins=['*'])
 
