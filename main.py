@@ -1,4 +1,5 @@
 import os
+app.secret_key = os.environ.get("SECRET_KEY", "super-secret-key")
 import sys
 
 # DON'T CHANGE THIS !!!
@@ -217,10 +218,19 @@ def serve_static(path):
 from flask import Flask
 
 app = Flask(__name__)
-from flask import send_from_directory
+from flask import Flask, send_from_directory
+
+app = Flask(__name__)
 
 @app.route("/")
 def home():
     return send_from_directory("static", "index.html")
+
+
+@app.route("/login")
+def login_page():
+    return send_from_directory("static", "login.html")
+
+
 if __name__ == "__main__":
     app.run(debug=True)
