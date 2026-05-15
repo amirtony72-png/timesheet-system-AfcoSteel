@@ -215,22 +215,21 @@ def serve_static(path):
         return redirect(url_for("index"))
     return send_from_directory(app.static_folder, path)
 
-from flask import Flask
+from flask import Flask, send_file
+import os
 
 app = Flask(__name__)
-from flask import Flask, send_from_directory
 
-app = Flask(__name__)
-
+# ✅ الصفحة الرئيسية
 @app.route("/")
 def home():
-    return send_from_directory("static", "index.html")
+    return send_file(os.path.join(app.root_path, "static", "index.html"))
 
-
+# ✅ صفحة login
 @app.route("/login")
 def login_page():
-    return send_from_directory("static", "login.html")
+    return send_file(os.path.join(app.root_path, "static", "login.html"))
 
-
+# ✅ تشغيل محلي فقط
 if __name__ == "__main__":
     app.run(debug=True)
