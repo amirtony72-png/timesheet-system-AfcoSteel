@@ -79,11 +79,7 @@ def serve_upload(filename):
 # =========================
 # ✅ ROUTES
 # =========================
-@app.route("/")
-def index():
-    if "user_id" not in session:
-        return redirect(url_for("login_page"))
-    return send_from_directory(app.static_folder, "index.html")
+
 @app.route("/")
 def index():
     if "user_id" not in session:
