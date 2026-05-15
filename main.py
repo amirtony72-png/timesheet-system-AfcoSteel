@@ -84,6 +84,26 @@ def index():
     if "user_id" not in session:
         return redirect(url_for("login_page"))
     return send_from_directory(app.static_folder, "index.html")
+@app.route("/")
+def index():
+    if "user_id" not in session:
+        return redirect(url_for("login_page"))
+    return send_from_directory(app.static_folder, "index.html")
+
+
+# ✅ هنا بالظبط
+@app.route("/admin")
+def admin_page():
+    if "user_id" not in session:
+        return redirect(url_for("login_page"))
+
+    from models.employee import Employee
+    user = Employee.query.filter_by(user_id=session["user_id"]).first()
+
+    if not user or not user.is_admin:
+        return redirect(url_for("index"))
+
+    return send_from_directory(app.static_folder, "admin.html")
 
 @app.route("/login")
 def login_page():
