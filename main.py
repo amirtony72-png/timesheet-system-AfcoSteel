@@ -21,25 +21,33 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = False
 
 # =========================
-# ✅ DATABASE (Auto Switch)
+# ✅ DATABASE (attendance.db + Render)
 # =========================
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
+# تأكد إن الفولدر موجود
+os.makedirs(os.path.join(base_dir, "instance"), exist_ok=True)
+
 db_url = os.environ.get("DATABASE_URL")
 
 if db_url:
-    # ✅ Render / Production
+    # ✅ Render → PostgreSQL
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
 
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-    print("✅ Using PostgreSQL (Production)")
+    print("✅ Using PostgreSQL (Render)")
+
 else:
-    # ✅ Local
-    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///instance/attendance.db"
-    print("✅ Using SQLite (Local)")
+    # ✅ Local → attendance.db
+    sqlite_path = os.path.join(base_dir, "instance", "attendance.db")
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{sqlite_path}"
+    print("✅ Using attendance.db (Local)")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# ✅ Bind DB
+# ✅ ربط DB
 db.init_app(app)
 
 # =========================
