@@ -12,13 +12,13 @@ app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'sta
 # =========================
 # ✅ SETTINGS
 # =========================
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "super-secret-key")
+
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = 86400
 app.config["SESSION_COOKIE_NAME"] = "attendance_sid"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = False
-
 # =========================
 # ✅ DATABASE
 # =========================
@@ -101,4 +101,4 @@ def logout():
 # ✅ RUN LOCAL
 # =========================
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
