@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم الأدمن - نظام إدارة الحضور</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; text-align: right; background: #f4f7f6; min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.1); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .nav-tab { padding: 10px 20px; border: none; background: #eee; cursor: pointer; border-radius: 8px; font-weight: 600; }
+        .nav-tab.active { background: #3498db; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; }
+        .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; margin-left: 5px; }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 10% auto; padding: 20px; border-radius: 10px; width: 50%; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+    </style>
+    <!-- Chart.js للرسوم البيانية -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>لوحة الإدارة</h1>
+            <a href="/" class="btn btn-primary">العودة للرئيسية</a>
+            <button class="btn btn-danger" onclick="logout()">تسجيل الخروج</button>
+        </div>
+
+        <div class="nav-tabs" style="flex-wrap:wrap;">
+            <button class="nav-tab active" onclick="showTab(event, 'employees')">إدارة الموظفين</button>
+            <button class="nav-tab" onclick="showTab(event, 'projects')">إدارة المشاريع</button>
+            <button class="nav-tab" onclick="showTab(event, 'settings')">إعدادات النظام</button>
+            <button class="nav-tab" onclick="showTab(event, 'timesheet-history')">سجل المهام</button>
+            <button class="nav-tab" onclick="showTab(event, 'attendance-log')">سجل الحضور والانصراف</button>
+            <button class="nav-tab" onclick="showTab(event, 'dashboard')" style="background:#27ae60;color:white;">📊 لوحة الإحصائيات</button>
+            <button id="overtimeTabBtn" class="nav-tab" onclick="showTab(event, 'overtime-approval')" style="background:#e67e22;color:white;">⏱ موافقة Overtime <span id="overtimePendingBadge" style="background:white;color:#e67e22;border-radius:50%;padding:2px 7px;font-size:0.85rem;margin-right:5px;">0</span></button>
+            <button class="nav-tab" onclick="showTab(event, 'project-stats')" style="background:#8e44ad;color:white;">📁 إحصائية المشاريع</button>
+        </div>
+
+        <!-- تبويب الموظفين -->
+        <div id="employees" class="tab-content active">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>قائمة الموظفين</h2>
+                <button class="btn btn-primary" onclick="showAddModal()">إضافة موظف جديد</button>
+            </div>
+            <table id="employeesTable"><thead><tr><th>ID</th><th>الاسم</th><th>المنصب</th><th>القسم</th><th>مسؤول؟</th><th>العمليات</th></tr></thead><tbody></tbody></table>
+        </div>
+
+        <!-- تبويب المشاريع -->
+        <div id="projects" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>قائمة المشاريع</h2>
+                <button class="btn btn-primary" onclick="showAddProjectModal()">إضافة مشروع جديد</button>
+            </div>
+            <table id="projectsTable"><thead><tr><th>ID</th><th>رقم المشروع</th><th>اسم المشروع</th><th>العمليات</th></tr></thead><tbody></tbody></table>
+            
+            <div id="projectJobsSection" style="display: none; margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 id="projectJobsTitle">أرقام الوظائف (Job Numbers) للمشروع</h3>
+                    <button class="btn btn-success" onclick="showAddJobModal()">إضافة Job Number</button>
+                </div>
+                <input type="hidden" id="currentProjectIdForJobs">
+                <table id="projectJobsTable" style="margin-top: 15px;">
+                    <thead><tr><th>ID</th><th>رقم الوظيفة (Job No)</th><th>الوصف</th><th>العمليات</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- تبويب الإعدادات -->
+        <div id="settings" class="tab-content">
+            <h2>إعدادات النظام</h2>
+            <p>سيتم إضافة الإعدادات هنا قريباً...</p>
+        </div>
+
+        <!-- تبويب سجل المهام -->
+        <div id="timesheet-history" class="tab-content">
+            <h2 style="margin-bottom:15px;">سجل المهام (لجميع الموظفين)</h2>
+
+            <!-- فلاتر البحث المتعددة -->
+            <div style="background:#f8f9fa; border-radius:10px; padding:15px; margin-bottom:15px; display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px;">
+                <div>
+                    <label style="font-size:0.85rem; font-weight:600;">تصفية حسب المشروع:</label>
+                    <select id="filterProject" style="width:100%;padding:7px;border-radius:5px;border:1px solid #ddd;margin-top:4px;">
+                        <option value="">جميع المشاريع</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.85rem; font-weight:600;">رقم المشروع:</label>
+                    <input type="text" id="filterProjectNumber" placeholder="مثال: P001" style="width:100%;padding:7px;border-radius:5px;border:1px solid #ddd;margin-top:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.85rem; font-weight:600;">تصفية حسب الموظف:</label>
+                    <select id="filterEmployee" style="width:100%;padding:7px;border-radius:5px;border:1px solid #ddd;margin-top:4px;">
+                        <option value="">جميع الموظفين</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.85rem; font-weight:600;">نوع الساعة:</label>
+                    <select id="filterHourType" style="width:100%;padding:7px;border-radius:5px;border:1px solid #ddd;margin-top:4px;">
+                        <option value="">جميع الأنواع</option>
+                        <option value="WORK ORDER">WORK ORDER</option>
+                        <option value="OVERTIME">OVERTIME</option>
+                        <option value="TRAINING">TRAINING</option>
+                        <option value="MEETING">MEETING</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.85rem; font-weight:600;">من تاريخ:</label>
+                    <input type="date" id="filterStartDate" style="width:100%;padding:7px;border-radius:5px;border:1px solid #ddd;margin-top:4px;">
+                </div>
+                <div>
+                    <label style="font-size:0.85rem; font-weight:600;">إلى تاريخ:</label>
+                    <input type="date" id="filterEndDate" style="width:100%;padding:7px;border-radius:5px;border:1px solid #ddd;margin-top:4px;">
+                </div>
+                <div style="display:flex; align-items:flex-end; gap:8px;">
+                    <button class="btn btn-primary" onclick="loadTimesheetHistory()" style="flex:1;">🔍 بحث</button>
+                    <button class="btn" onclick="clearFilters()" style="flex:1; background:#6c757d; color:white;">إعادة</button>
+                    <button class="btn btn-success" onclick="exportTimesheetToExcel()">إكسل</button>
+                </div>
+            </div>
+
+            <!-- إجمالي ساعات المشاريع -->
+            <div style="margin-bottom:15px;">
+                <button class="btn" onclick="toggleProjectTotals()" style="background:#17a2b8;color:white;">📈 إجمالي ساعات المشاريع</button>
+                <button class="btn" onclick="toggleTodayStats()" style="background:#6f42c1;color:white; margin-right:8px;">📅 إحصائية اليوم</button>
+            </div>
+
+            <!-- جدول إجمالي ساعات المشاريع -->
+            <div id="projectTotalsSection" style="display:none; background:#e8f4fd; border-radius:10px; padding:15px; margin-bottom:15px;">
+                <h3 style="margin-bottom:10px;">إجمالي ساعات المشاريع</h3>
+                <div id="grandTotalBadge" style="margin-bottom:10px; font-size:1.1rem; font-weight:bold;"></div>
+                <table id="projectTotalsTable">
+                    <thead><tr><th>رقم المشروع</th><th>اسم المشروع</th><th>ساعات عمل</th><th>ساعات OT</th><th>الإجمالي</th><th>عدد الجلسات</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- إحصائية ساعات اليوم -->
+            <div id="todayStatsSection" style="display:none; background:#f0e6ff; border-radius:10px; padding:15px; margin-bottom:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3>إحصائية ساعات الموظفين</h3>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="date" id="todayStatsDate" style="padding:6px; border-radius:5px; border:1px solid #ddd;">
+                        <button class="btn btn-primary" onclick="loadTodayStats()">عرض</button>
+                    </div>
+                </div>
+                <table id="todayStatsTable">
+                    <thead><tr><th>الموظف</th><th>القسم</th><th>ساعات عمل</th><th>ساعات OT</th><th>الإجمالي</th><th>جلسات</th><th>الحالة</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped" id="timesheetHistoryTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>التاريخ</th>
+                            <th>معرف الموظف</th>
+                            <th>اسم الموظف</th>
+                            <th>القسم</th>
+                            <th>المنصب</th>
+                            <th>رقم المشروع</th>
+                            <th>اسم المشروع</th>
+                            <th>Job No</th>
+                            <th>المهمة</th>
+                            <th>الوصف</th>
+                            <th>نوع الساعة</th>
+                            <th>الحالة</th>
+                            <th>وقت البدء</th>
+                            <th>وقت الانتهاء</th>
+                            <th>إجمالي الوقت</th>
+                            <th>تعديل</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- سيتم تحميل سجل المهام هنا -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- تبويب لوحة الإحصائيات -->
+        <div id="dashboard" class="tab-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2>📊 لوحة الإحصائيات الشهرية</h2>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <label>الشهر:</label>
+                    <select id="dashMonth" onchange="loadDashboard()" style="padding:8px; border-radius:5px; border:1px solid #ddd;">
+                        <option value="1">يناير</option><option value="2">فبراير</option>
+                        <option value="3">مارس</option><option value="4">أبريل</option>
+                        <option value="5">مايو</option><option value="6">يونيو</option>
+                        <option value="7">يوليو</option><option value="8">أغسطس</option>
+                        <option value="9">سبتمبر</option><option value="10">أكتوبر</option>
+                        <option value="11">نوفمبر</option><option value="12">ديسمبر</option>
+                    </select>
+                    <select id="dashYear" onchange="loadDashboard()" style="padding:8px; border-radius:5px; border:1px solid #ddd;"></select>
+                </div>
+            </div>
+
+            <!-- تنبيهات الـ Overtime -->
+            <div id="overtimeAlerts" style="display:none; background:#fff3cd; border:1px solid #ffc107; border-radius:10px; padding:15px; margin-bottom:20px;">
+                <h3 style="color:#856404; margin-bottom:10px;">⚠️ تنبيه: موظفون تجاوزوا 50 ساعة Overtime هذا الشهر</h3>
+                <div id="overtimeAlertsList"></div>
+            </div>
+
+            <!-- الرسوم البيانية -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:30px;">
+                <div style="background:#f8f9fa; border-radius:10px; padding:20px;">
+                    <h3 style="margin-bottom:15px;">ساعات العمل لكل موظف</h3>
+                    <canvas id="chartRegular" height="250"></canvas>
+                </div>
+                <div style="background:#f8f9fa; border-radius:10px; padding:20px;">
+                    <h3 style="margin-bottom:15px;">ساعات الـ Overtime لكل موظف</h3>
+                    <canvas id="chartOvertime" height="250"></canvas>
+                </div>
+            </div>
+
+            <!-- الرسم البياني الأسبوعي -->
+            <div style="background:#f8f9fa; border-radius:10px; padding:20px; margin-bottom:30px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3>الساعات اليومية - آخر 7 أيام</h3>
+                    <select id="dashEmpFilter" onchange="loadWeeklyChart()" style="padding:8px; border-radius:5px; border:1px solid #ddd;">
+                        <option value="">جميع الموظفين</option>
+                    </select>
+                </div>
+                <canvas id="chartWeekly" height="120"></canvas>
+            </div>
+
+            <!-- جدول الإحصائيات -->
+            <h3 style="margin-bottom:10px;">تفاصيل ساعات كل موظف</h3>
+            <table id="dashTable">
+                <thead>
+                    <tr>
+                        <th>الموظف</th>
+                        <th>القسم</th>
+                        <th>المنصب</th>
+                        <th>ساعات العمل</th>
+                        <th>ساعات Overtime</th>
+                        <th>الإجمالي</th>
+                        <th>تنبيه</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- تبويب موافقة Overtime -->
+        <div id="overtime-approval" class="tab-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2>⏱ طلبات Overtime بانتظار الموافقة</h2>
+                <button class="btn btn-primary" onclick="loadPendingOvertime()">تحديث</button>
+            </div>
+            <!-- تنبيه لا توجد طلبات -->
+            <div id="noOvertimeMsg" style="display:none; text-align:center; padding:40px; color:#888; font-size:1.2rem;">
+                ✅ لا توجد طلبات Overtime بانتظار الموافقة
+            </div>
+            <table id="overtimeApprovalTable">
+                <thead>
+                    <tr>
+                        <th>الموظف</th>
+                        <th>التاريخ</th>
+                        <th>رقم المشروع</th>
+                        <th>اسم المشروع</th>
+                        <th>Job No</th>
+                        <th>المهمة</th>
+                        <th>الوصف</th>
+                        <th>الوقت</th>
+                        <th>العمليات</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- تبويب إحصائية المشاريع -->
+        <div id="project-stats" class="tab-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2>📁 إحصائية المشاريع</h2>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <label>من:</label>
+                    <input type="date" id="projStatsStart" style="padding:8px; border-radius:5px; border:1px solid #ddd;">
+                    <label>إلى:</label>
+                    <input type="date" id="projStatsEnd" style="padding:8px; border-radius:5px; border:1px solid #ddd;">
+                    <button class="btn btn-primary" onclick="loadProjectStats()">بحث</button>
+                    <button class="btn" onclick="document.getElementById('projStatsStart').value=''; document.getElementById('projStatsEnd').value=''; loadProjectStats();" style="background:#95a5a6;color:white;">كل الفترات</button>
+                </div>
+            </div>
+            <!-- جدول المشاريع التفصيلي -->
+            <div id="projectStatsContainer"></div>
+        </div>
+
+        <!-- تبويب سجل الحضور والانصراف -->
+        <div id="attendance-log" class="tab-content">
+            <h2 class="mb-4">سجل الحضور والانصراف</h2>
+            <div class="table-responsive">
+                <table class="table table-striped" id="attendanceLogTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>معرف الموظف</th>
+                            <th>اسم الموظف</th>
+                            <th>تاريخ الحضور</th>
+                            <th>وقت الدخول</th>
+                            <th>وقت الخروج</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- سيتم تحميل سجل الحضور والانصراف هنا -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal الموظفين -->
+    <div id="employeeModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle"></h2>
+            <form id="employeeForm">
+                <input type="hidden" id="empId">
+                <div class="form-group">
+                    <label>معرف المستخدم:</label>
+                    <input type="text" id="empUserId" required>
+                </div>
+                <div class="form-group">
+                    <label>الاسم:</label>
+                    <input type="text" id="empName" required>
+                </div>
+                <div class="form-group">
+                    <label>المنصب (Position):</label>
+                    <input type="text" id="empPosition">
+                </div>
+                <div class="form-group">
+                    <label>القسم:</label>
+                    <input type="text" id="empDept">
+                </div>
+                <div class="form-group">
+                    <label>الصلاحية (Role):</label>
+                    <input type="text" id="empRole">
+                </div>
+                <div class="form-group">
+                    <label>مسؤول نظام (Admin)؟</label>
+                    <select id="empIsAdmin">
+                        <option value="false">لا</option>
+                        <option value="true">نعم</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>كلمة المرور:</label>
+                    <input type="password" id="empPass">
+                </div>
+                <div style="text-align: left;">
+                    <button type="button" class="btn" onclick="closeModal('employeeModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal المشاريع -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <h2 id="projectModalTitle"></h2>
+            <form id="projectForm">
+                <input type="hidden" id="projectId">
+                <div class="form-group">
+                    <label>رقم المشروع:</label>
+                    <input type="text" id="projectNumber" required>
+                </div>
+                <div class="form-group">
+                    <label>اسم المشروع:</label>
+                    <input type="text" id="projectName" required>
+                </div>
+                <div style="text-align: left;">
+                    <button type="button" class="btn" onclick="closeModal('projectModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal تعديل الجلسة -->
+    <div id="editSessModal" class="modal">
+        <div class="modal-content">
+            <h2>تعديل الجلسة</h2>
+            <form id="editSessionForm">
+                <div class="form-group">
+                    <label>نوع الساعة:</label>
+                    <select id="editSessHourType" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:5px;">
+                        <option value="WORK ORDER">WORK ORDER</option>
+                        <option value="OVERTIME">OVERTIME</option>
+                        <option value="TRAINING">TRAINING</option>
+                        <option value="MEETING">MEETING</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Job No:</label>
+                    <input type="text" id="editSessJobNo">
+                </div>
+                <div class="form-group">
+                    <label>المهمة:</label>
+                    <input type="text" id="editSessTask">
+                </div>
+                <div class="form-group">
+                    <label>الوصف:</label>
+                    <textarea id="editSessDesc" rows="3" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:5px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>وقت البدء (للعرض فقط):</label>
+                    <input type="text" id="editSessStartTime" readonly
+                           style="width:100%;padding:10px;border:1px solid #ddd;border-radius:5px;background:#f5f5f5;color:#666;">
+                </div>
+                <div class="form-group">
+                    <label>وقت الانتهاء (قابل للتعديل):</label>
+                    <input type="datetime-local" id="editSessEndTime"
+                           style="width:100%;padding:10px;border:1px solid #ddd;border-radius:5px;">
+                    <small style="color:#888;">اتركه فارغاً إذا كانت الجلسة لا تزال نشطة</small>
+                </div>
+                <div style="text-align:left;">
+                    <button type="button" class="btn" onclick="closeModal('editSessModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ التعديلات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Job Numbers -->
+    <div id="jobModal" class="modal">
+        <div class="modal-content">
+            <h2 id="jobModalTitle"></h2>
+            <form id="jobForm">
+                <input type="hidden" id="jobId">
+                <div class="form-group">
+                    <label>رقم الوظيفة (Job Number):</label>
+                    <input type="text" id="jobNumber" required>
+                </div>
+                <div class="form-group">
+                    <label>الوصف:</label>
+                    <input type="text" id="jobDescription">
+                </div>
+                <div style="text-align: left;">
+                    <button type="button" class="btn" onclick="closeModal('jobModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        console.log("Admin script started loading.");
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOMContentLoaded fired in admin.html');
+            showTab(null, 'employees'); // Default to employees tab
+        });
+
+        let allEmployees = [];
+        let allProjects = [];
+
+        function showTab(event, tabId) {
+            document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+            document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
+            document.getElementById(tabId).classList.add("active");
+            if (event) {
+                event.currentTarget.classList.add("active");
+            } else { // For initial load when event is null
+                document.querySelector(`.nav-tab[onclick*='${tabId}']`).classList.add("active");
+            }
+
+            // Load data based on the active tab
+            if (tabId === 'employees') {
+                loadEmployees();
+            } else if (tabId === 'projects') {
+                loadProjects();
+            } else if (tabId === 'timesheet-history') {
+                loadProjectsForFilter();
+                loadTimesheetHistory();
+            } else if (tabId === 'dashboard') {
+                loadDashboard();
+            } else if (tabId === 'attendance-log') {
+                loadAttendanceLog();
+            }
+        }
+
+        // --- Employee Management ---
+        async function loadEmployees() {
+            const response = await fetch('/api/admin/employees');
+            const data = await response.json();
+            allEmployees = data.employees;
+            const tbody = document.querySelector('#employeesTable tbody');
+            tbody.innerHTML = '';
+            allEmployees.forEach(emp => {
+                tbody.innerHTML += `<tr><td>${emp.user_id}</td><td>${emp.name}</td><td>${emp.role}</td><td>${emp.department || '-'}</td><td>${emp.is_admin ? 'نعم' : 'لا'}</td><td><button class="btn btn-warning" onclick="editEmployee(${emp.id})">تعديل</button><button class="btn btn-danger" onclick="deleteEmployee(${emp.id})">حذف</button></td></tr>`;
+            });
+        }
+
+        function showAddModal() {
+            document.getElementById('modalTitle').textContent = 'إضافة موظف جديد';
+            document.getElementById('employeeForm').reset();
+            document.getElementById('empId').value = '';
+            document.getElementById('employeeModal').style.display = 'block';
+        }
+
+        async function editEmployee(id) {
+            const emp = allEmployees.find(e => e.id === id);
+            if (!emp) return;
+            document.getElementById('modalTitle').textContent = 'تعديل بيانات الموظف';
+            document.getElementById('empId').value = emp.id;
+            document.getElementById('empUserId').value = emp.user_id;
+            document.getElementById('empName').value = emp.name;
+            document.getElementById('empPosition').value = emp.position;
+            document.getElementById('empRole').value = emp.role;
+            document.getElementById('empIsAdmin').value = emp.is_admin;
+            document.getElementById('empDept').value = emp.department;
+            document.getElementById('empPass').value = ''; // Password should not be pre-filled for security
+            document.getElementById('employeeModal').style.display = 'block';
+        }
+
+        async function deleteEmployee(id) {
+            if (!confirm('هل أنت متأكد من حذف هذا الموظف؟')) return;
+            await fetch(`/api/admin/employees/${id}`, { method: 'DELETE' });
+            loadEmployees();
+        }
+
+        document.getElementById('employeeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('empId').value;
+            const url = id ? `/api/admin/employees/${id}` : '/api/admin/employees';
+            const method = id ? 'PUT' : 'POST';
+            const body = JSON.stringify({
+                user_id: document.getElementById('empUserId').value,
+                name: document.getElementById('empName').value,
+                position: document.getElementById('empPosition').value,
+                role: document.getElementById('empRole').value,
+                is_admin: document.getElementById('empIsAdmin').value === 'true',
+                department: document.getElementById('empDept').value,
+                password: document.getElementById('empPass').value // Only send if changed or new
+            });
+            await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body });
+            closeModal('employeeModal');
+            loadEmployees();
+        });
+
+        // --- Project Management ---
+        async function loadProjects() {
+            const response = await fetch('/api/admin/projects');
+            const data = await response.json();
+            allProjects = data.projects;
+            const tbody = document.querySelector('#projectsTable tbody');
+            tbody.innerHTML = '';
+            allProjects.forEach(p => {
+                tbody.innerHTML += `<tr><td>${p.id}</td><td>${p.project_number}</td><td>${p.project_name}</td><td><button class="btn btn-info" onclick="manageProjectJobs(${p.id}, '${p.project_name}')">إدارة Job Numbers</button> <button class="btn btn-warning" onclick="editProject(${p.id})">تعديل</button> <button class="btn btn-danger" onclick="deleteProject(${p.id})">حذف</button></td></tr>`;
+            });
+        }
+
+        function showAddProjectModal() {
+            document.getElementById('projectModalTitle').textContent = 'إضافة مشروع جديد';
+            document.getElementById('projectForm').reset();
+            document.getElementById('projectId').value = '';
+            document.getElementById('projectModal').style.display = 'block';
+        }
+
+        async function editProject(id) {
+            const p = allProjects.find(proj => proj.id === id);
+            if (!p) return;
+            document.getElementById('projectModalTitle').textContent = 'تعديل بيانات المشروع';
+            document.getElementById('projectId').value = p.id;
+            document.getElementById('projectNumber').value = p.project_number;
+            document.getElementById('projectName').value = p.project_name;
+            document.getElementById('projectModal').style.display = 'block';
+        }
+
+        async function deleteProject(id) {
+            if (!confirm('هل أنت متأكد من حذف هذا المشروع؟')) return;
+            await fetch(`/api/admin/projects/${id}`, { method: 'DELETE' });
+            loadProjects();
+        }
+
+        document.getElementById('projectForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('projectId').value;
+            const url = id ? `/api/admin/projects/${id}` : '/api/admin/projects';
+            const method = id ? 'PUT' : 'POST';
+            const body = JSON.stringify({ project_number: document.getElementById('projectNumber').value, project_name: document.getElementById('projectName').value });
+            await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body });
+            closeModal('projectModal');
+            loadProjects();
+        });
+
+        // --- Project Jobs Management ---
+        async function manageProjectJobs(projectId, projectName) {
+            document.getElementById('projectJobsSection').style.display = 'block';
+            document.getElementById('projectJobsTitle').textContent = `أرقام الوظائف (Job Numbers) لمشروع: ${projectName}`;
+            document.getElementById('currentProjectIdForJobs').value = projectId;
+            await loadProjectJobs(projectId);
+        }
+
+        async function loadProjectJobs(projectId) {
+            const response = await fetch(`/api/admin/projects/${projectId}/jobs`);
+            const data = await response.json();
+            const tbody = document.querySelector('#projectJobsTable tbody');
+            tbody.innerHTML = '';
+            if (data.jobs && data.jobs.length > 0) {
+                data.jobs.forEach(j => {
+                    tbody.innerHTML += `<tr><td>${j.id}</td><td>${j.job_number}</td><td>${j.description || '-'}</td><td><button class="btn btn-warning" onclick="editProjectJob(${j.id}, '${j.job_number}', '${j.description || ''}')">تعديل</button> <button class="btn btn-danger" onclick="deleteProjectJob(${j.id})">حذف</button></td></tr>`;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">لا توجد أرقام وظائف مسجلة لهذا المشروع</td></tr>';
+            }
+        }
+
+        function showAddJobModal() {
+            document.getElementById('jobModalTitle').textContent = 'إضافة Job Number جديد';
+            document.getElementById('jobForm').reset();
+            document.getElementById('jobId').value = '';
+            document.getElementById('jobModal').style.display = 'block';
+        }
+
+        function editProjectJob(id, jobNumber, description) {
+            document.getElementById('jobModalTitle').textContent = 'تعديل Job Number';
+            document.getElementById('jobId').value = id;
+            document.getElementById('jobNumber').value = jobNumber;
+            document.getElementById('jobDescription').value = description;
+            document.getElementById('jobModal').style.display = 'block';
+        }
+
+        async function deleteProjectJob(id) {
+            if (!confirm('هل أنت متأكد من حذف رقم الوظيفة هذا؟')) return;
+            await fetch(`/api/admin/jobs/${id}`, { method: 'DELETE' });
+            const projectId = document.getElementById('currentProjectIdForJobs').value;
+            loadProjectJobs(projectId);
+        }
+
+        document.getElementById('jobForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const jobId = document.getElementById('jobId').value;
+            const projectId = document.getElementById('currentProjectIdForJobs').value;
+            const url = jobId ? `/api/admin/jobs/${jobId}` : `/api/admin/projects/${projectId}/jobs`;
+            const method = jobId ? 'PUT' : 'POST';
+            const body = JSON.stringify({ 
+                job_number: document.getElementById('jobNumber').value, 
+                description: document.getElementById('jobDescription').value 
+            });
+            
+            const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body });
+            const result = await response.json();
+            
+            if (response.ok) {
+                closeModal('jobModal');
+                loadProjectJobs(projectId);
+            } else {
+                alert(result.error || 'حدث خطأ أثناء الحفظ');
+            }
+        });
+
+        // --- Timesheet History ---
+        async function loadProjectsForFilter() {
+            // تحميل المشاريع في قائمة الفلتر
+            const projRes = await fetch('/api/projects');
+            const projData = await projRes.json();
+            const filterProject = document.getElementById('filterProject');
+            filterProject.innerHTML = '<option value="">جميع المشاريع</option>';
+            projData.projects.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = `${p.project_number} - ${p.project_name}`;
+                filterProject.appendChild(opt);
+            });
+
+            // تحميل الموظفين في قائمة الفلتر
+            const empRes = await fetch('/api/admin/employees');
+            const empData = await empRes.json();
+            const filterEmployee = document.getElementById('filterEmployee');
+            filterEmployee.innerHTML = '<option value="">جميع الموظفين</option>';
+            (empData.employees || []).filter(e => !e.is_admin).forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e.id;
+                opt.textContent = `${e.user_id} - ${e.name}`;
+                filterEmployee.appendChild(opt);
+            });
+        }
+
+        // متغير لحفظ الجلسات لاستخدامها في نافذة التعديل
+        let allSessionsCache = [];
+
+        function clearFilters() {
+            document.getElementById('filterProject').value = '';
+            document.getElementById('filterProjectNumber').value = '';
+            document.getElementById('filterEmployee').value = '';
+            document.getElementById('filterHourType').value = '';
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            loadTimesheetHistory();
+        }
+
+        async function loadTimesheetHistory() {
+            // جمع قيم الفلاتر
+            const projectId     = document.getElementById('filterProject').value;
+            const projectNumber = document.getElementById('filterProjectNumber').value.trim();
+            const employeeId    = document.getElementById('filterEmployee').value;
+            const hourType      = document.getElementById('filterHourType').value;
+            const startDate     = document.getElementById('filterStartDate').value;
+            const endDate       = document.getElementById('filterEndDate').value;
+
+            // بناء الرابط مع الفلاتر المختارة
+            const params = new URLSearchParams();
+            if (projectId)     params.append('project_id', projectId);
+            if (projectNumber) params.append('project_number', projectNumber);
+            if (employeeId)    params.append('employee_id', employeeId);
+            if (hourType)      params.append('hour_type', hourType);
+            if (startDate)     params.append('start_date', startDate);
+            if (endDate)       params.append('end_date', endDate);
+
+            const response = await fetch(`/api/timesheet/sessions?${params.toString()}`);
+            const data = await response.json();
+            allSessionsCache = data.sessions || [];
+
+            const tbody = document.querySelector('#timesheetHistoryTable tbody');
+            tbody.innerHTML = '';
+            if (allSessionsCache.length > 0) {
+                allSessionsCache.forEach(s => {
+                    const duration = s.total_time || 'جارية';
+                    const isOT = s.hour_type === 'OVERTIME';
+                    const rowStyle = isOT ? 'background:#fffde7;' : '';
+                    const otBadge = isOT ? '<span style="background:#f39c12;color:white;padding:2px 6px;border-radius:4px;font-size:0.8rem;">OT</span> ' : '';
+                    // تنسيق وقت البدء والانتهاء لعرضهما بشكل مقروء
+                    const startFmt = s.start_time ? s.start_time.replace('T',' ').slice(0,16) : '-';
+                    const endFmt   = s.end_time ? s.end_time.replace('T',' ').slice(0,16) : (s.status === 'active' ? 'جارية' : '-');
+                    tbody.innerHTML += `<tr style="${rowStyle}">
+                        <td>${s.id}</td>
+                        <td>${s.date}</td>
+                        <td>${s.employee_user_id}</td>
+                        <td>${s.employee_name}</td>
+                        <td>${s.employee_department}</td>
+                        <td>${s.employee_position}</td>
+                        <td>${s.project_number || '-'}</td>
+                        <td>${s.project_name}</td>
+                        <td>${s.job_no || '-'}</td>
+                        <td>${s.task_name || '-'}</td>
+                        <td style="max-width:160px;font-size:0.85rem;color:#555;">${s.description || '-'}</td>
+                        <td>${otBadge}${s.hour_type}</td>
+                        <td>${s.status}</td>
+                        <td>${startFmt}</td>
+                        <td>${endFmt}</td>
+                        <td>${duration}</td>
+                        <td><button class="btn btn-warning" onclick="editSession(${s.id}, '${(s.hour_type||'').replace(/'/g,'')}', '${(s.task_name||'').replace(/'/g,'')}', '${(s.description||'').replace(/'/g,'')}', '${(s.job_no||'').replace(/'/g,'')}', ${s.project_id||'null'}, '${s.start_time||''}', '${s.end_time||''}')">&#9998; تعديل</button></td>
+                    </tr>`;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="17" style="text-align: center;">لا توجد بيانات متاحة</td></tr>';
+            }
+        }
+
+        // إظهار/إخفاء إجمالي ساعات المشاريع
+        async function toggleProjectTotals() {
+            const sec = document.getElementById('projectTotalsSection');
+            if (sec.style.display !== 'none') { sec.style.display = 'none'; return; }
+            sec.style.display = 'block';
+
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate   = document.getElementById('filterEndDate').value;
+            const params = new URLSearchParams();
+            if (startDate) params.append('start_date', startDate);
+            if (endDate)   params.append('end_date', endDate);
+
+            const res  = await fetch(`/api/timesheet/project-totals?${params.toString()}`);
+            const data = await res.json();
+            if (!data.success) return;
+
+            document.getElementById('grandTotalBadge').innerHTML =
+                `إجمالي جميع المشاريع: <span style="color:#2980b9; font-size:1.3rem;">${data.grand_total_hours} ساعة</span>`;
+
+            const tbody = document.querySelector('#projectTotalsTable tbody');
+            tbody.innerHTML = '';
+            data.projects.forEach(p => {
+                tbody.innerHTML += `<tr>
+                    <td>${p.project_number}</td>
+                    <td>${p.project_name}</td>
+                    <td>${p.regular_hours}</td>
+                    <td style="color:#e67e22;">${p.overtime_hours}</td>
+                    <td><strong>${p.total_hours}</strong></td>
+                    <td>${p.session_count}</td>
+                </tr>`;
+            });
+        }
+
+        // إظهار/إخفاء إحصائية اليوم
+        async function toggleTodayStats() {
+            const sec = document.getElementById('todayStatsSection');
+            if (sec.style.display !== 'none') { sec.style.display = 'none'; return; }
+            sec.style.display = 'block';
+            // تعيين تاريخ اليوم افتراضياً
+            if (!document.getElementById('todayStatsDate').value) {
+                document.getElementById('todayStatsDate').value = new Date().toISOString().slice(0,10);
+            }
+            await loadTodayStats();
+        }
+
+        async function loadTodayStats() {
+            const d   = document.getElementById('todayStatsDate').value || new Date().toISOString().slice(0,10);
+            const res = await fetch(`/api/timesheet/today-stats?date=${d}`);
+            const data = await res.json();
+            if (!data.success) return;
+
+            const tbody = document.querySelector('#todayStatsTable tbody');
+            tbody.innerHTML = '';
+            data.employees.forEach(emp => {
+                const activeLabel = emp.active_now
+                    ? `<span style="background:#27ae60;color:white;padding:2px 8px;border-radius:10px;font-size:0.8rem;">• نشط</span>`
+                    : `<span style="color:#aaa;">—</span>`;
+                tbody.innerHTML += `<tr style="${emp.active_now ? 'background:#f0fff4;' : ''}">
+                    <td>${emp.name}</td>
+                    <td>${emp.department}</td>
+                    <td>${emp.regular_hours}</td>
+                    <td style="color:#e67e22;">${emp.overtime_hours}</td>
+                    <td><strong>${emp.total_hours}</strong></td>
+                    <td>${emp.session_count}</td>
+                    <td>${activeLabel}</td>
+                </tr>`;
+            });
+        }
+
+        async function exportTimesheetToExcel() {
+            // تصدير Excel مع نفس الفلاتر المختارة
+            const params = new URLSearchParams();
+            const projectId     = document.getElementById('filterProject').value;
+            const projectNumber = document.getElementById('filterProjectNumber').value.trim();
+            const employeeId    = document.getElementById('filterEmployee').value;
+            const hourType      = document.getElementById('filterHourType').value;
+            const startDate     = document.getElementById('filterStartDate').value;
+            const endDate       = document.getElementById('filterEndDate').value;
+            if (projectId)     params.append('project_id', projectId);
+            if (projectNumber) params.append('project_number', projectNumber);
+            if (employeeId)    params.append('employee_id', employeeId);
+            if (hourType)      params.append('hour_type', hourType);
+            if (startDate)     params.append('start_date', startDate);
+            if (endDate)       params.append('end_date', endDate);
+            window.open(`/api/timesheet/export/excel?${params.toString()}`, '_blank');
+        }
+
+        // --- General Functions ---
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        async function loadAttendanceLog() {
+            const response = await fetch('/api/admin/attendance-log');
+            const data = await response.json();
+            const tbody = document.querySelector('#attendanceLogTable tbody');
+            tbody.innerHTML = '';
+            data.attendance_records.forEach(record => {
+                tbody.innerHTML += `<tr><td>${record.id}</td><td>${record.user_id}</td><td>${record.employee_name}</td><td>${new Date(record.date).toLocaleDateString()}</td><td>${record.check_in_time || '-'}</td><td>${record.check_out_time || '-'}</td><td>${record.status}</td></tr>`;
+            });
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/login';
+        }
+
+        // ─── لوحة الإحصائيات ───────────────────────────────────────────────
+        let chartRegular = null, chartOvertime = null, chartWeekly = null;
+
+        async function loadDashboard() {
+            const year  = document.getElementById('dashYear').value  || new Date().getFullYear();
+            const month = document.getElementById('dashMonth').value || (new Date().getMonth()+1);
+            const res = await fetch(`/api/admin/dashboard/stats?year=${year}&month=${month}`);
+            if (!res.ok) return;
+            const data = await res.json();
+
+            // --- تنبيهات الـ Overtime ---
+            const alertBox = document.getElementById('overtimeAlerts');
+            const alertList = document.getElementById('overtimeAlertsList');
+            if (data.overtime_alerts && data.overtime_alerts.length > 0) {
+                alertBox.style.display = 'block';
+                alertList.innerHTML = data.overtime_alerts.map(a =>
+                    `<div style="padding:6px 0; border-bottom:1px solid #ffc107;">
+                        <strong>${a.name}</strong> (${a.department}) — 
+                        <span style="color:#c0392b; font-weight:bold;">${a.overtime_hours} ساعة Overtime</span>
+                    </div>`
+                ).join('');
+            } else {
+                alertBox.style.display = 'none';
+            }
+
+            // --- جدول الإحصائيات ---
+            const tbody = document.querySelector('#dashTable tbody');
+            tbody.innerHTML = '';
+            data.stats.forEach(emp => {
+                const alertCell = emp.overtime_alert
+                    ? `<span style="color:#c0392b; font-weight:bold;">⚠️ تجاوز 50 ساعة</span>`
+                    : `<span style="color:#27ae60;">✔ طبيعي</span>`;
+                tbody.innerHTML += `<tr style="${emp.overtime_alert ? 'background:#fff3cd;' : ''}">
+                    <td>${emp.name}</td>
+                    <td>${emp.department}</td>
+                    <td>${emp.position}</td>
+                    <td>${emp.regular_hours}</td>
+                    <td style="color:${emp.overtime_alert ? '#c0392b' : '#333'}; font-weight:${emp.overtime_alert ? 'bold' : 'normal'}">${emp.overtime_hours}</td>
+                    <td><strong>${emp.total_hours}</strong></td>
+                    <td>${alertCell}</td>
+                </tr>`;
+            });
+
+            // --- رسم بياني: ساعات العمل العادي ---
+            const names = data.stats.map(e => e.name);
+            const regHours = data.stats.map(e => (e.regular_seconds/3600).toFixed(1));
+            const otHours  = data.stats.map(e => (e.overtime_seconds/3600).toFixed(1));
+
+            if (chartRegular) chartRegular.destroy();
+            chartRegular = new Chart(document.getElementById('chartRegular'), {
+                type: 'bar',
+                data: { labels: names, datasets: [{ label: 'ساعات العمل', data: regHours, backgroundColor: '#3498db' }] },
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'ساعات' } } } }
+            });
+
+            if (chartOvertime) chartOvertime.destroy();
+            chartOvertime = new Chart(document.getElementById('chartOvertime'), {
+                type: 'bar',
+                data: { labels: names, datasets: [{ label: 'ساعات Overtime', data: otHours, backgroundColor: data.stats.map(e => e.overtime_alert ? '#e74c3c' : '#f39c12') }] },
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'ساعات' } } } }
+            });
+
+            // تحديث قائمة الموظفين في فلتر الرسم الأسبوعي
+            const empFilter = document.getElementById('dashEmpFilter');
+            empFilter.innerHTML = '<option value="">جميع الموظفين</option>';
+            data.stats.forEach(e => {
+                empFilter.innerHTML += `<option value="${e.id}">${e.name}</option>`;
+            });
+
+            await loadWeeklyChart();
+        }
+
+        async function loadWeeklyChart() {
+            const empId = document.getElementById('dashEmpFilter').value;
+            const url = empId ? `/api/admin/dashboard/daily?employee_id=${empId}` : '/api/admin/dashboard/daily';
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const data = await res.json();
+
+            const labels   = data.daily.map(d => `${d.day_name} ${d.date.slice(5)}`);
+            const regData  = data.daily.map(d => d.regular_hours);
+            const otData   = data.daily.map(d => d.overtime_hours);
+
+            if (chartWeekly) chartWeekly.destroy();
+            chartWeekly = new Chart(document.getElementById('chartWeekly'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'عمل عادي', data: regData, backgroundColor: '#3498db' },
+                        { label: 'Overtime',  data: otData,  backgroundColor: '#f39c12' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, title: { display: true, text: 'ساعات' } } }
+                }
+            });
+        }
+
+        // ─── تعديل الجلسة (للمدير) ─────────────────────────────────────────────────
+        let editingSessionId = null;
+
+        // فتح نافذة تعديل الجلسة مع دعم تعديل وقت الانتهاء
+        function editSession(id, hourType, taskName, description, jobNo, projectId, startTime, endTime) {
+            editingSessionId = id;
+            document.getElementById('editSessHourType').value = hourType || 'WORK ORDER';
+            document.getElementById('editSessTask').value     = taskName    || '';
+            document.getElementById('editSessDesc').value     = description || '';
+            document.getElementById('editSessJobNo').value    = jobNo       || '';
+
+            // تعبئة وقت البدء (للعرض فقط)
+            const startEl = document.getElementById('editSessStartTime');
+            if (startEl) {
+                startEl.value = startTime ? startTime.replace('T', ' ').slice(0, 16) : '';
+                startEl.readOnly = true; // وقت البدء للعرض فقط
+            }
+
+            // تعبئة وقت الانتهاء (قابل للتعديل)
+            const endEl = document.getElementById('editSessEndTime');
+            if (endEl) {
+                // تحويل الوقت إلى صيغة datetime-local
+                if (endTime) {
+                    endEl.value = endTime.replace(' ', 'T').slice(0, 16);
+                } else {
+                    endEl.value = '';
+                }
+            }
+
+            document.getElementById('editSessModal').style.display = 'block';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // تهيئة سنوات الـ dashboard
+            const yearSel = document.getElementById('dashYear');
+            const curYear = new Date().getFullYear();
+            for (let y = curYear; y >= curYear - 3; y--) {
+                yearSel.innerHTML += `<option value="${y}" ${y === curYear ? 'selected' : ''}>${y}</option>`;
+            }
+            // تحديد الشهر الحالي
+            document.getElementById('dashMonth').value = new Date().getMonth() + 1;
+        });
+
+        document.getElementById('editSessionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!editingSessionId) return;
+
+            // جمع بيانات التعديل بما فيها وقت الانتهاء
+            const endTimeVal = document.getElementById('editSessEndTime').value;
+            const body = {
+                hour_type:   document.getElementById('editSessHourType').value,
+                task_name:   document.getElementById('editSessTask').value,
+                description: document.getElementById('editSessDesc').value,
+                job_no:      document.getElementById('editSessJobNo').value,
+                // إرسال وقت الانتهاء إذا تم تعبئته
+                end_time: endTimeVal || null
+            };
+            const res = await fetch(`/api/admin/sessions/${editingSessionId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const result = await res.json();
+            if (res.ok) {
+                closeModal('editSessModal');
+                loadTimesheetHistory();
+                alert('تم تحديث الجلسة بنجاح ✅');
+            } else {
+                alert(result.error || 'حدث خطأ');
+            }
+        });
+        // ═══ موافقة Overtime ═════════════════════════════════════════════════════════════════════
+
+        /**
+         * تحميل طلبات Overtime بانتظار الموافقة وعرضها في الجدول
+         * يتم تحديث الشارة العددية في زر التبويب
+         */
+        async function loadPendingOvertime() {
+            const res  = await fetch('/api/admin/overtime/pending');
+            const data = await res.json();
+            const list = data.pending_overtime || [];
+
+            // تحديث الشارة العددية
+            document.getElementById('overtimePendingBadge').textContent = list.length;
+
+            const tbody = document.querySelector('#overtimeApprovalTable tbody');
+            tbody.innerHTML = '';
+
+            if (list.length === 0) {
+                document.getElementById('noOvertimeMsg').style.display = 'block';
+                document.getElementById('overtimeApprovalTable').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('noOvertimeMsg').style.display = 'none';
+            document.getElementById('overtimeApprovalTable').style.display = 'table';
+
+            list.forEach(item => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${item.employee_name}</strong><br><small style="color:#888">${item.employee_id}</small></td>
+                        <td>${item.date}</td>
+                        <td>${item.project_number}</td>
+                        <td>${item.project_name}</td>
+                        <td>${item.job_no}</td>
+                        <td>${item.task_name}</td>
+                        <td style="max-width:150px;font-size:0.85rem;color:#555;">${item.description || '-'}</td>
+                        <td><strong>${item.total_time}</strong></td>
+                        <td>
+                            <button class="btn" style="background:#27ae60;color:white;" onclick="approveOvertime(${item.id})">✔ موافقة</button>
+                            <button class="btn btn-danger" onclick="rejectOvertime(${item.id})">✖ رفض</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        /**
+         * موافقة المدير على طلب Overtime
+         * يبقى hour_type = 'OVERTIME' ويتحدث overtime_approval_status = 'approved'
+         */
+        async function approveOvertime(sessionId) {
+            if (!confirm('هل توافق على طلب Overtime هذا؟')) return;
+            const res = await fetch(`/api/admin/overtime/${sessionId}/approve`, { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) {
+                alert('✅ ' + data.message);
+                loadPendingOvertime(); // تحديث القائمة
+            } else {
+                alert('خطأ: ' + (data.error || 'حدث خطأ غير متوقع'));
+            }
+        }
+
+        /**
+         * رفض المدير لطلب Overtime
+         * يحول hour_type إلى 'WORK ORDER' ويحفظ سبب الرفض
+         */
+        async function rejectOvertime(sessionId) {
+            const note = prompt('سبب الرفض (اختياري):');
+            if (note === null) return; // ضغط إلغاء
+            const res = await fetch(`/api/admin/overtime/${sessionId}/reject`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note: note || '' })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert('✅ ' + data.message);
+                loadPendingOvertime();
+            } else {
+                alert('خطأ: ' + (data.error || 'حدث خطأ غير متوقع'));
+            }
+        }
+
+        // ═══ إحصائية المشاريع ═════════════════════════════════════════════════════════════════════
+
+        /**
+         * تحميل إحصائية المشاريع مع تفصيل كل مشروع وكل موظف
+         * يدعم فلترة التاريخ (start_date, end_date)
+         */
+        async function loadProjectStats() {
+            const startDate = document.getElementById('projStatsStart').value;
+            const endDate   = document.getElementById('projStatsEnd').value;
+            const params    = new URLSearchParams();
+            if (startDate) params.append('start_date', startDate);
+            if (endDate)   params.append('end_date',   endDate);
+
+            const res  = await fetch(`/api/admin/stats/projects?${params.toString()}`);
+            const data = await res.json();
+            const container = document.getElementById('projectStatsContainer');
+
+            if (!data.projects || data.projects.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:#888;padding:40px;">لا توجد بيانات للفترة المحددة</p>';
+                return;
+            }
+
+            let html = '';
+            data.projects.forEach((proj, idx) => {
+                // بطاقة المشروع
+                html += `
+                <div style="background:#f8f9fa; border-radius:10px; padding:20px; margin-bottom:20px; border-right:5px solid #8e44ad;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <div>
+                            <h3 style="color:#8e44ad; margin:0;">${proj.project_number} - ${proj.project_name}</h3>
+                        </div>
+                        <div style="display:flex; gap:20px; text-align:center;">
+                            <div style="background:white; border-radius:8px; padding:10px 20px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                                <div style="font-size:0.8rem; color:#888;">عمل عادي</div>
+                                <div style="font-size:1.3rem; font-weight:bold; color:#3498db;">${proj.regular_hours}</div>
+                            </div>
+                            <div style="background:white; border-radius:8px; padding:10px 20px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                                <div style="font-size:0.8rem; color:#888;">Overtime</div>
+                                <div style="font-size:1.3rem; font-weight:bold; color:#e67e22;">${proj.overtime_hours}</div>
+                            </div>
+                            <div style="background:#8e44ad; border-radius:8px; padding:10px 20px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                                <div style="font-size:0.8rem; color:rgba(255,255,255,0.8);">الإجمالي</div>
+                                <div style="font-size:1.3rem; font-weight:bold; color:white;">${proj.total_hours}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- جدول الموظفين داخل المشروع -->
+                    <table style="width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden;">
+                        <thead>
+                            <tr style="background:#eee;">
+                                <th style="padding:10px; text-align:right;">الموظف</th>
+                                <th style="padding:10px; text-align:center;">عمل عادي</th>
+                                <th style="padding:10px; text-align:center;">Overtime</th>
+                                <th style="padding:10px; text-align:center;">الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+                proj.employees.forEach(emp => {
+                    html += `
+                            <tr style="border-bottom:1px solid #eee;">
+                                <td style="padding:10px;">${emp.employee_name} <small style="color:#888;">(${emp.employee_id})</small></td>
+                                <td style="padding:10px; text-align:center; color:#3498db; font-weight:bold;">${emp.regular_hours}</td>
+                                <td style="padding:10px; text-align:center; color:#e67e22; font-weight:bold;">${emp.overtime_hours}</td>
+                                <td style="padding:10px; text-align:center; font-weight:bold;">${emp.total_hours}</td>
+                            </tr>`;
+                });
+
+                html += `
+                        </tbody>
+                    </table>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // تحميل عدد طلبات Overtime عند فتح الصفحة
+        window.addEventListener('load', () => {
+            loadPendingOvertime();
+        });
+
+    </script>
+</body>
+</html>

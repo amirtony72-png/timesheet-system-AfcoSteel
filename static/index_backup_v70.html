@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة الحضور والانصراف المتطور</title>
+    <link rel="icon" type="image/png" href="app_icon.png">
+    <link rel="apple-touch-icon" href="app_icon.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; text-align: right; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 30px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .header h1 { color: white; font-size: 2.5rem; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); }
+        .header p { color: rgba(255, 255, 255, 0.8); font-size: 1.1rem; }
+        .nav-tabs { display: flex; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 15px; padding: 10px; margin-bottom: 30px; gap: 10px; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .nav-tab { flex: 1; padding: 15px 20px; background: transparent; border: none; border-radius: 10px; color: rgba(255, 255, 255, 0.7); cursor: pointer; transition: all 0.3s ease; font-size: 1rem; font-weight: 500; }
+        .nav-tab.active { background: rgba(255, 255, 255, 0.2); color: white; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); }
+        .nav-tab:hover { background: rgba(255, 255, 255, 0.1); color: white; transform: translateY(-1px); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card { background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); margin-bottom: 30px; }
+        .card h2 { color: #333; margin-bottom: 25px; font-size: 1.8rem; border-bottom: 3px solid #667eea; padding-bottom: 10px; display: inline-block; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #555; font-weight: 600; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 1rem; transition: all 0.3s ease; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #667eea; outline: none; box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1); }
+        .form-row { display: flex; gap: 20px; margin-bottom: 20px; }
+        .form-row > * { flex: 1; }
+        .btn { padding: 12px 25px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; justify-content: center; gap: 10px; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); }
+        .btn-success { background: linear-gradient(135deg, #28a745 0%, #218838 100%); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); }
+        .timer-display { font-size: 3rem; font-weight: bold; color: #333; text-align: center; margin: 20px 0; font-family: monospace; background: #f8f9fa; padding: 20px; border-radius: 15px; border: 2px solid #e1e5e9; }
+        .timer-display.overtime { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .timesheet-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e1e5e9; padding-bottom: 10px; }
+        .ts-tab { padding: 10px 20px; border: none; background: transparent; cursor: pointer; font-weight: 600; color: #666; border-radius: 8px; }
+        .ts-tab.active { background: #667eea; color: white; }
+        .hidden { display: none !important; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 15px; text-align: right; border-bottom: 1px solid #e1e5e9; }
+        th { background-color: #f8f9fa; color: #333; font-weight: 600; }
+        .alert { padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: 500; }
+        .alert-error { background: #fee; color: #c53030; border: 1px solid #fed7d7; }
+        .alert-success { background: #f0fff4; color: #38a169; border: 1px solid #c6f6d5; }
+        /* شارة Overtime */
+        .overtime-badge {
+            display: inline-block;
+            background: #ffc107;
+            color: #333;
+            font-weight: bold;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 8px;
+        }
+        /* شريط تقدم ساعات اليوم */
+        .hours-progress-bar {
+            width: 100%;
+            background: #e1e5e9;
+            border-radius: 10px;
+            height: 12px;
+            margin: 10px 0 5px 0;
+            overflow: hidden;
+        }
+        .hours-progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #28a745, #667eea);
+            transition: width 1s linear;
+        }
+        .hours-progress-fill.overtime { background: linear-gradient(90deg, #ffc107, #dc3545); }
+        .hours-info { font-size: 0.9rem; color: #666; text-align: center; margin-bottom: 15px; }
+        /* صف Overtime في الجدول */
+        tr.overtime-row td { background: #fff8e1; }
+        /* بطاقة معلومات الجلسة الجارية */
+        .session-info-card {
+            background: #f0f4ff;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+        .session-info-card.overtime-session {
+            background: #fff8e1;
+            border-color: #ffc107;
+        }
+        .session-info-card span { font-weight: bold; color: #333; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="mainScreen">
+            <div class="header">
+                <h1 id="welcomeMessage">مرحباً بك</h1>
+                <p id="userRole"></p>
+                <button class="btn btn-danger" onclick="logout()" style="margin-top: 10px;">تسجيل الخروج</button>
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showTab('attendance')">الحضور والانصراف</button>
+                <button class="nav-tab" onclick="showTab('timesheet')">سجل المهام (Timesheet)</button>
+                <button id="adminTab" class="nav-tab hidden" onclick="window.location.href='/admin'">لوحة الإدارة</button>
+            </div>
+            <div id="attendance" class="tab-content active">
+                <div class="card">
+                    <h2>تسجيل الحضور والانصراف</h2>
+                    <div style="text-align: center; margin: 40px 0;">
+                        <button id="checkInBtn" class="btn btn-success" style="padding: 20px 50px; font-size: 1.5rem;" onclick="recordAttendance('check-in')">تسجيل دخول</button>
+                        <button id="checkOutBtn" class="btn btn-danger hidden" style="padding: 20px 50px; font-size: 1.5rem;" onclick="recordAttendance('check-out')">تسجيل خروج</button>
+                    </div>
+                    <div id="attendanceStatus" class="alert hidden"></div>
+                </div>
+            </div>
+            <div id="timesheet" class="tab-content">
+                <div class="card">
+                    <h2>سجل المهام (Timesheet)</h2>
+                    <div class="timesheet-tabs">
+                        <button class="ts-tab active" onclick="showTsSubTab('active-session')">الجلسة الحالية</button>
+                        <button class="ts-tab" onclick="showTsSubTab('history')">السجل</button>
+                    </div>
+
+                    <!-- قسم الجلسة الحالية -->
+                    <div id="ts-active-session" class="ts-sub-tab">
+
+                        <!-- شريط تقدم ساعات اليوم -->
+                        <div id="hoursProgressSection">
+                            <div class="hours-info" id="hoursInfoText">إجمالي ساعات اليوم: 00:00:00 / 08:00:00</div>
+                            <div class="hours-progress-bar">
+                                <div class="hours-progress-fill" id="hoursProgressFill" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- تنبيه Overtime التلقائي -->
+                        <div id="overtimeAlert" class="alert hidden" style="background:#fff3cd; color:#856404; border:1px solid #ffc107; margin-bottom:15px;">
+                            ⚠️ لقد تجاوزت 8 ساعات عمل اليوم - الجلسة الحالية تُحسب كـ <strong>OVERTIME</strong> بانتظار موافقة المدير
+                        </div>
+
+                        <!-- بطاقة حالة طلب Overtime للموظف -->
+                        <div id="overtimeStatusCard" class="hidden" style="border-radius:12px; padding:15px 20px; margin-bottom:15px; font-size:0.95rem;">
+                            <strong>حالة طلب Overtime:</strong>
+                            <span id="overtimeStatusText">—</span>
+                        </div>
+
+                        <!-- عرض الساعة -->
+                        <div id="timerDisplay" class="timer-display">00:00:00</div>
+
+                        <!-- بطاقة معلومات الجلسة الجارية (تظهر عند وجود جلسة) -->
+                        <div id="currentSessionInfo" class="session-info-card hidden">
+                            <div>نوع الساعة: <span id="infoHourType">-</span></div>
+                            <div>المشروع: <span id="infoProject">-</span></div>
+                            <div>Job No: <span id="infoJobNo">-</span></div>
+                            <div>المهمة: <span id="infoTaskName">-</span></div>
+                            <div id="infoDescRow" style="display:none;">الوصف: <span id="infoDescription">-</span></div>
+                        </div>
+
+                        <!-- نموذج بدء الجلسة -->
+                        <form id="timesheetForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ts-hour-type">نوع الساعات:</label>
+                                    <select id="ts-hour-type" required onchange="toggleConditionalFields()">
+                                        <option value="">— اختر النوع —</option>
+                                        <option value="WORK ORDER">WORK ORDER</option>
+                                        <option value="OVERTIME" style="color:#e67e22; font-weight:bold;">⏱ OVERTIME (وقت إضافي)</option>
+                                        <option value="IDLE">IDLE</option>
+                                        <option value="VACATION">VACATION</option>
+                                        <option value="TRAINING">TRAINING</option>
+                                        <option value="GENERAL MEETING">GENERAL MEETING</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="conditionalFields" class="hidden">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="projectSelect">اختر المشروع:</label>
+                                        <select id="projectSelect" onchange="loadJobNumbers()"></select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="jobNoSelect">Job No:</label>
+                                        <select id="jobNoSelect"></select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="taskName">اسم المهمة:</label>
+                                    <input type="text" id="taskName">
+                                </div>
+                                <!-- حقل الوصف اختياري - يكتب فيه الموظف ما يفعله خاصة عند الوقت الإضافي -->
+                                <div class="form-group">
+                                    <label for="description">الوصف <span style="color:#999; font-weight:400;">(اختياري - اكتب ما تقوم به)</span>:</label>
+                                    <textarea id="description" rows="2" placeholder="مثال: تركيب كابلات الطابق الثالث، أو: وقت إضافي لإنهاء أعمال اللحام..."></textarea>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-success">بدء الجلسة</button>
+                        </form>
+
+                        <button id="endSessionBtn" class="btn btn-danger hidden" onclick="endSession()">إنهاء الجلسة</button>
+                        <div id="sessionStatus" class="alert hidden" style="margin-top: 20px;"></div>
+                    </div>
+
+                    <!-- قسم السجل - يعرض سجل الموظف الحالي فقط -->
+                    <div id="ts-history" class="ts-sub-tab hidden">
+                        <h3>سجل جلساتي</h3>
+                        <div class="form-group">
+                            <label for="historyProjectFilter">تصفية حسب المشروع:</label>
+                            <select id="historyProjectFilter" onchange="loadTimesheetHistory()"></select>
+                        </div>
+                        <table id="timesheetHistoryTable">
+                            <thead>
+                                <tr>
+                                    <th>التاريخ</th>
+                                    <th>رقم المشروع</th>
+                                    <th>اسم المشروع</th>
+                                    <th>Job No</th>
+                                    <th>المهمة</th>
+                                    <th>الوصف</th>
+                                    <th>نوع الساعة</th>
+                                    <th>حالة الموافقة</th>
+                                    <th>الوقت المستغرق</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let timerInterval = null;
+        let activeSession = null;
+        let overtimeCheckInterval = null; // فحص دوري كل دقيقة للتحقق من Overtime
+
+        const REGULAR_HOURS_LIMIT = 8 * 3600; // 8 ساعات بالثواني
+
+        // ─── تتبع التنبيهات الدورية ───
+        // مصفوفة تحتوي على الحدود الزمنية بالثواني وحالة إطلاقها
+        const REMINDER_MILESTONES = [
+            { seconds: 2 * 3600,  label: 'ساعتان',    fired: false },
+            { seconds: 4 * 3600,  label: '4 ساعات',  fired: false },
+            { seconds: 6 * 3600,  label: '6 ساعات',  fired: false },
+            { seconds: 8 * 3600,  label: '8 ساعات',  fired: false }
+        ];
+
+        // إعادة تهيئة التنبيهات عند بدء جلسة جديدة
+        function resetMilestones() {
+            REMINDER_MILESTONES.forEach(m => m.fired = false);
+        }
+
+        /**
+         * تشغيل صوت تذكير خفيف (نغمتان تصاعديتان)
+         */
+        function playReminderSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                // نغمة أولى
+                const o1 = ctx.createOscillator(), g1 = ctx.createGain();
+                o1.connect(g1); g1.connect(ctx.destination);
+                o1.frequency.value = 520;
+                g1.gain.setValueAtTime(0.4, ctx.currentTime);
+                g1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                o1.start(ctx.currentTime); o1.stop(ctx.currentTime + 0.3);
+                // نغمة ثانية أعلى
+                const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+                o2.connect(g2); g2.connect(ctx.destination);
+                o2.frequency.value = 660;
+                g2.gain.setValueAtTime(0.4, ctx.currentTime + 0.35);
+                g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.65);
+                o2.start(ctx.currentTime + 0.35); o2.stop(ctx.currentTime + 0.65);
+            } catch(e) { console.warn('تعذر تشغيل صوت التذكير:', e); }
+        }
+
+        /**
+         * تشغيل صوت تنبيه عند 4 ساعات (ثلاث نغمات)
+         */
+        function playHalfDaySound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                [0, 0.4, 0.8].forEach((delay, i) => {
+                    const o = ctx.createOscillator(), g = ctx.createGain();
+                    o.connect(g); g.connect(ctx.destination);
+                    o.frequency.value = 600 + i * 80;
+                    g.gain.setValueAtTime(0.5, ctx.currentTime + delay);
+                    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.35);
+                    o.start(ctx.currentTime + delay); o.stop(ctx.currentTime + delay + 0.35);
+                });
+            } catch(e) { console.warn('تعذر تشغيل صوت نصف اليوم:', e); }
+        }
+
+        /**
+         * إظهار إشعار منبثث في أسفل الشاشة (Toast)
+         */
+        function showToast(message, color) {
+            // إزالة أي toast سابق
+            const old = document.getElementById('reminderToast');
+            if (old) old.remove();
+
+            const toast = document.createElement('div');
+            toast.id = 'reminderToast';
+            toast.style.cssText = `
+                position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+                background: ${color || '#333'}; color: white;
+                padding: 14px 28px; border-radius: 30px;
+                font-size: 1.1rem; font-weight: bold;
+                box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+                z-index: 9999; direction: rtl;
+                animation: fadeInUp 0.4s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            // اختفاء بعد 6 ثواني
+            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 6000);
+        }
+
+        /**
+         * فحص التنبيهات الدورية بناءً على إجمالي ساعات اليوم.
+         * يُستدعى من updateHoursProgress بعد كل تحديث.
+         */
+        function checkMilestoneAlerts(totalSeconds) {
+            REMINDER_MILESTONES.forEach(m => {
+                if (!m.fired && totalSeconds >= m.seconds) {
+                    m.fired = true;
+                    if (m.seconds === 8 * 3600) {
+                        // تنبيه 8 ساعات - سيتحول إلى Overtime
+                        playOvertimeSound();
+                        showToast('⚠️ وصلت إلى 8 ساعات! سيتحول النظام إلى OVERTIME', '#e67e22');
+                    } else if (m.seconds === 4 * 3600) {
+                        // تنبيه 4 ساعات - نصف اليوم
+                        playHalfDaySound();
+                        showToast('✅ مضى نصف يوم العمل (4 ساعات)', '#27ae60');
+                    } else {
+                        // تذكير دوري كل ساعتين
+                        playReminderSound();
+                        showToast(`⏰ تذكير: مضى ${m.label} من العمل`, '#2980b9');
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLoginStatus();
+        });
+
+        async function checkLoginStatus() {
+            try {
+                const response = await fetch("/api/current_user");
+                if (!response.ok) throw new Error('Not logged in');
+                const data = await response.json();
+                currentUser = data.user;
+                document.getElementById("welcomeMessage").textContent = `مرحباً بك، ${currentUser.name}`;
+                document.getElementById("userRole").textContent = `المنصب: ${currentUser.role}`;
+                if (currentUser.is_admin) {
+                    document.getElementById("adminTab").classList.remove("hidden");
+                }
+                checkActiveSession();
+                // بدء الفحص الدوري للـ Overtime كل 60 ثانية
+                overtimeCheckInterval = setInterval(checkOvertimeStatus, 60000);
+            } catch (error) {
+                window.location.href = "/login";
+            }
+        }
+
+        async function checkActiveSession() {
+            const response = await fetch('/api/timesheet/active_session');
+            if (response.ok) {
+                const data = await response.json();
+                // تحديث شريط التقدم
+                updateHoursProgress(data.today_total_seconds || 0);
+
+                if (data.active_session) {
+                    activeSession = data.active_session;
+                    startTimer(new Date(activeSession.start_time));
+                    document.getElementById('timesheetForm').classList.add('hidden');
+                    document.getElementById('endSessionBtn').classList.remove('hidden');
+                    showCurrentSessionInfo(activeSession);
+
+                    // تنبيه Overtime إذا كانت الجلسة overtime
+                    if (activeSession.hour_type === 'OVERTIME' || data.overtime_reached) {
+                        showOvertimeAlert();
+                    }
+                } else {
+                    stopTimer();
+                    document.getElementById('timesheetForm').classList.remove('hidden');
+                    document.getElementById('endSessionBtn').classList.add('hidden');
+                    document.getElementById('currentSessionInfo').classList.add('hidden');
+                }
+            }
+        }
+
+        /**
+         * الفحص الدوري للـ Overtime أثناء الجلسة الجارية.
+         * يُستدعى كل 60 ثانية تلقائياً.
+         */
+        async function checkOvertimeStatus() {
+            if (!activeSession) return;
+            try {
+                const response = await fetch('/api/timesheet/check_overtime', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.switched) {
+                        // تم التحويل إلى Overtime تلقائياً
+                        activeSession = data.new_session;
+                        showOvertimeAlert();
+                        showAlert('sessionStatus', 'success', '⚠️ تم تجاوز 8 ساعات - تم التحويل تلقائياً إلى OVERTIME');
+                        showCurrentSessionInfo(data.new_session);
+                        // تحديث شريط التقدم
+                        await checkActiveSession();
+                    } else if (data.today_total_seconds !== undefined) {
+                        updateHoursProgress(data.today_total_seconds);
+                    }
+                }
+            } catch (e) {
+                console.error("Overtime check error:", e);
+            }
+        }
+
+        /**
+         * تحديث شريط تقدم ساعات اليوم.
+         */
+        function updateHoursProgress(totalSeconds) {
+            const percent = Math.min((totalSeconds / REGULAR_HOURS_LIMIT) * 100, 100);
+            const fill = document.getElementById('hoursProgressFill');
+            const info = document.getElementById('hoursInfoText');
+
+            const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+            const s = Math.floor(totalSeconds % 60).toString().padStart(2, '0');
+
+            fill.style.width = percent + '%';
+            info.textContent = `إجمالي ساعات اليوم: ${h}:${m}:${s} / 08:00:00`;
+
+            if (totalSeconds >= REGULAR_HOURS_LIMIT) {
+                fill.classList.add('overtime');
+                info.style.color = '#856404';
+                info.style.fontWeight = 'bold';
+            } else {
+                fill.classList.remove('overtime');
+                info.style.color = '#666';
+                info.style.fontWeight = 'normal';
+            }
+
+            // فحص التنبيهات الدورية بعد كل تحديث لشريط التقدم
+            checkMilestoneAlerts(totalSeconds);
+        }
+
+        /**
+         * إظهار تنبيه Overtime.
+         */
+        // ─── إشعار صوتي عند التحول إلى Overtime ───
+        function playOvertimeSound() {
+            try {
+                // إنشاء صوت تنبيه باستخدام Web Audio API (لا يحتاج ملف صوت)
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+                // نغمة أولى - تنبيه عالي
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.frequency.value = 880; // تردد عالي
+                gain1.gain.setValueAtTime(0.5, ctx.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                osc1.start(ctx.currentTime);
+                osc1.stop(ctx.currentTime + 0.4);
+
+                // نغمة ثانية بعد 0.5 ثانية
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.frequency.value = 660;
+                gain2.gain.setValueAtTime(0.5, ctx.currentTime + 0.5);
+                gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9);
+                osc2.start(ctx.currentTime + 0.5);
+                osc2.stop(ctx.currentTime + 0.9);
+
+                // نغمة ثالثة بعد 1 ثانية
+                const osc3 = ctx.createOscillator();
+                const gain3 = ctx.createGain();
+                osc3.connect(gain3);
+                gain3.connect(ctx.destination);
+                osc3.frequency.value = 440;
+                gain3.gain.setValueAtTime(0.7, ctx.currentTime + 1.0);
+                gain3.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.6);
+                osc3.start(ctx.currentTime + 1.0);
+                osc3.stop(ctx.currentTime + 1.6);
+            } catch (e) {
+                console.warn('تعذر تشغيل الصوت:', e);
+            }
+        }
+
+        function showOvertimeAlert() {
+            document.getElementById('overtimeAlert').classList.remove('hidden');
+            document.getElementById('timerDisplay').classList.add('overtime');
+        }
+
+        /**
+         * إظهار بطاقة معلومات الجلسة الجارية.
+         */
+        function showCurrentSessionInfo(sess) {
+            const card = document.getElementById('currentSessionInfo');
+            card.classList.remove('hidden');
+            if (sess.hour_type === 'OVERTIME') {
+                card.classList.add('overtime-session');
+            } else {
+                card.classList.remove('overtime-session');
+            }
+            document.getElementById('infoHourType').textContent = sess.hour_type || '-';
+            document.getElementById('infoProject').textContent = sess.project_id ? `(${sess.project_id})` : '-';
+            document.getElementById('infoJobNo').textContent = sess.job_no || '-';
+            document.getElementById('infoTaskName').textContent = sess.task_name || '-';
+            // إظهار الوصف في بطاقة الجلسة إذا كان موجوداً
+            if (sess.description) {
+                document.getElementById('infoDescRow').style.display = 'block';
+                document.getElementById('infoDescription').textContent = sess.description;
+            } else {
+                document.getElementById('infoDescRow').style.display = 'none';
+            }
+        }
+
+        function startTimer(startTime) {
+            if (timerInterval) clearInterval(timerInterval);
+            const timerDisplay = document.getElementById('timerDisplay');
+            timerInterval = setInterval(() => {
+                const now = new Date();
+                const diff = now - startTime;
+                const hours = Math.floor(diff / 3600000).toString().padStart(2, '0');
+                const minutes = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+                const seconds = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                timerDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            document.getElementById('timerDisplay').textContent = '00:00:00';
+            document.getElementById('timerDisplay').classList.remove('overtime');
+            document.getElementById('overtimeAlert').classList.add('hidden');
+        }
+
+        document.getElementById('timesheetForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const hourType = document.getElementById("ts-hour-type").value;
+            let body = { hour_type: hourType };
+
+            if (!hourType) {
+                showAlert("sessionStatus", "error", "الرجاء اختيار نوع الساعات.");
+                return;
+            }
+
+            if (hourType === "WORK ORDER") {
+                const projectId = document.getElementById("projectSelect").value;
+                const jobNo = document.getElementById("jobNoSelect").value;
+                const taskName = document.getElementById("taskName").value;
+
+                if (!projectId || !jobNo || !taskName) {
+                    showAlert("sessionStatus", "error", "الرجاء ملء جميع الحقول المطلوبة لنوع WORK ORDER.");
+                    return;
+                }
+
+                body.project_id = projectId;
+                body.job_no = jobNo;
+                body.task_name = taskName;
+                // الوصف اختياري - يُرسل إذا كتبه الموظف
+                body.description = document.getElementById("description").value || "";
+            }
+
+            try {
+                const response = await fetch("/api/timesheet/session/start", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    activeSession = data.session;
+                    // إعادة تهيئة التنبيهات عند بدء جلسة جديدة
+                    resetMilestones();
+                    startTimer(new Date(activeSession.start_time));
+                    document.getElementById('timesheetForm').classList.add('hidden');
+                    document.getElementById('endSessionBtn').classList.remove('hidden');
+                    showCurrentSessionInfo(activeSession);
+
+                    // إذا تم التحويل التلقائي إلى Overtime
+                    if (data.overtime_auto_switched) {
+                        showOvertimeAlert();
+                        playOvertimeSound(); // تشغيل صوت التنبيه
+                        showAlert('sessionStatus', 'success', '⚠️ تم تجاوز 8 ساعات - تم التحويل تلقائياً إلى OVERTIME بنفس بيانات المهمة');
+                    } else {
+                        showAlert('sessionStatus', 'success', 'تم بدء الجلسة بنجاح.');
+                    }
+
+                    // تحديث شريط التقدم
+                    updateHoursProgress(data.today_total_seconds || 0);
+                } else {
+                    showAlert('sessionStatus', 'error', `حدث خطأ: ${data.error || 'خطأ غير معروف'}`);
+                }
+            } catch (error) {
+                console.error("Error starting session:", error);
+                showAlert('sessionStatus', 'error', 'حدث خطأ في الاتصال بالخادم.');
+            }
+        });
+
+        async function endSession() {
+            const response = await fetch("/api/timesheet/session/end", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (response.ok) {
+                stopTimer();
+                activeSession = null;
+                document.getElementById('timesheetForm').reset();
+                document.getElementById('timesheetForm').classList.remove('hidden');
+                document.getElementById('endSessionBtn').classList.add('hidden');
+                document.getElementById('currentSessionInfo').classList.add('hidden');
+                toggleConditionalFields();
+                showAlert('sessionStatus', 'success', 'تم إنهاء الجلسة بنجاح.');
+                // تحديث شريط التقدم بعد الإنهاء
+                await checkActiveSession();
+            } else {
+                showAlert('sessionStatus', 'error', 'حدث خطأ أثناء إنهاء الجلسة.');
+            }
+        }
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content, .nav-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.nav-tab[onclick*="${tabId}"]`).classList.add('active');
+            if (tabId === 'timesheet') {
+                loadProjects('projectSelect');
+                loadProjects('historyProjectFilter');
+                checkActiveSession();
+            }
+        }
+
+        function showTsSubTab(tabId) {
+            document.querySelectorAll('.ts-sub-tab, .ts-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(`ts-${tabId}`).classList.add('active');
+            document.querySelector(`.ts-tab[onclick*="${tabId}"]`).classList.add('active');
+            if (tabId === 'history') {
+                loadTimesheetHistory();
+            }
+        }
+
+        async function loadProjects(selectId) {
+            try {
+                const response = await fetch('/api/admin/projects');
+                if (response.ok) {
+                    const data = await response.json();
+                    const select = document.getElementById(selectId);
+                    select.innerHTML = selectId === 'historyProjectFilter'
+                        ? '<option value="">-- جميع المشاريع --</option>'
+                        : '<option value="">-- اختر المشروع --</option>';
+
+                    if (data.projects) {
+                        data.projects.forEach(p => {
+                            select.innerHTML += `<option value="${p.id}">${p.project_number} - ${p.project_name}</option>`;
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading projects:", error);
+            }
+        }
+
+        async function loadJobNumbers() {
+            const projectId = document.getElementById('projectSelect').value;
+            const select = document.getElementById('jobNoSelect');
+            select.innerHTML = '<option value="">-- اختر رقم الوظيفة --</option>';
+
+            if (!projectId) return;
+
+            try {
+                const response = await fetch(`/api/admin/projects/${projectId}/jobs`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.jobs && data.jobs.length > 0) {
+                        data.jobs.forEach(j => {
+                            select.innerHTML += `<option value="${j.job_number}">${j.job_number}${j.description ? ' - ' + j.description : ''}</option>`;
+                        });
+                    } else {
+                        select.innerHTML = '<option value="">لا توجد أرقام وظائف لهذا المشروع</option>';
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading job numbers:", error);
+            }
+        }
+
+        function toggleConditionalFields() {
+            const hourType = document.getElementById('ts-hour-type').value;
+            // حقول المشروع والمهمة تظهر لـ WORK ORDER ولـ OVERTIME أيضاً
+            const needsProject = (hourType === 'WORK ORDER' || hourType === 'OVERTIME');
+
+            document.getElementById('conditionalFields').classList.toggle('hidden', !needsProject);
+            document.getElementById('projectSelect').required = needsProject;
+            document.getElementById('jobNoSelect').required = false; // اختياري للـ OVERTIME
+            document.getElementById('taskName').required = needsProject;
+
+            if (needsProject && !document.getElementById('projectSelect').value) {
+                loadProjects('projectSelect');
+            }
+        }
+
+        async function loadTimesheetHistory() {
+            // يجلب سجل الموظف الحالي فقط (API يفلتر تلقائياً للموظف غير المدير)
+            const projectId = document.getElementById('historyProjectFilter').value;
+            const url = projectId
+                ? `/api/timesheet/sessions?project_id=${projectId}`
+                : '/api/timesheet/sessions';
+            const response = await fetch(url);
+            const data = await response.json();
+            const tbody = document.querySelector('#timesheetHistoryTable tbody');
+            tbody.innerHTML = '';
+            if (data.sessions && data.sessions.length > 0) {
+                data.sessions.forEach(s => {
+                    const duration = s.total_time || 'جارية';
+                    const isOvertime = s.hour_type === 'OVERTIME';
+                    const rowClass = isOvertime ? 'overtime-row' : '';
+                    const overtimeBadge = isOvertime ? '<span class="overtime-badge">OT</span>' : '';
+
+                    // عرض حالة موافقة Overtime للموظف
+                    let approvalCell = '';
+                    if (isOvertime && s.overtime_approval_status) {
+                        const status = s.overtime_approval_status;
+                        if (status === 'pending') {
+                            approvalCell = '<span style="background:#ffc107;color:#333;padding:3px 10px;border-radius:20px;font-size:0.8rem;font-weight:bold;">⏳ بانتظار</span>';
+                        } else if (status === 'approved') {
+                            approvalCell = '<span style="background:#27ae60;color:white;padding:3px 10px;border-radius:20px;font-size:0.8rem;font-weight:bold;">✔ موافق</span>';
+                        } else if (status === 'rejected') {
+                            const note = s.overtime_rejection_note ? `<br><small style="color:#c0392b">سبب: ${s.overtime_rejection_note}</small>` : '';
+                            approvalCell = `<span style="background:#e74c3c;color:white;padding:3px 10px;border-radius:20px;font-size:0.8rem;font-weight:bold;">✖ مرفوض</span>${note}`;
+                        }
+                    }
+
+                    tbody.innerHTML += `<tr class="${rowClass}">
+                        <td>${new Date(s.date).toLocaleDateString()}</td>
+                        <td>${s.project_number || '-'}</td>
+                        <td>${s.project_name}</td>
+                        <td>${s.job_no || '-'}</td>
+                        <td>${s.task_name || '-'}</td>
+                        <td style="max-width:200px; white-space:pre-wrap; font-size:0.9rem; color:#555;">${s.description || '-'}</td>
+                        <td>${overtimeBadge}${s.hour_type || '-'}</td>
+                        <td>${approvalCell || '-'}</td>
+                        <td>${duration}</td>
+                    </tr>`;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">لا توجد جلسات مسجلة.</td></tr>';
+            }
+        }
+
+        async function recordAttendance(type) {
+            try {
+                const response = await fetch(`/api/attendance/${type}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showAlert('attendanceStatus', 'success', data.message || 'تم التسجيل بنجاح');
+                    if (type === 'check-in') {
+                        document.getElementById('checkInBtn').classList.add('hidden');
+                        document.getElementById('checkOutBtn').classList.remove('hidden');
+                    } else {
+                        document.getElementById('checkOutBtn').classList.add('hidden');
+                        document.getElementById('checkInBtn').classList.remove('hidden');
+                    }
+                } else {
+                    showAlert('attendanceStatus', 'error', data.error || 'حدث خطأ');
+                }
+            } catch (e) {
+                showAlert('attendanceStatus', 'error', 'حدث خطأ في الاتصال بالخادم.');
+            }
+        }
+
+        async function logout() {
+            clearInterval(overtimeCheckInterval);
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/login';
+        }
+
+        function showAlert(elementId, type, message) {
+            const alertBox = document.getElementById(elementId);
+            alertBox.classList.remove('hidden');
+            alertBox.className = `alert alert-${type}`;
+            alertBox.textContent = message;
+            setTimeout(() => alertBox.classList.add('hidden'), 6000);
+        }
+
+        // تهيئة الصفحة
+        showTab('attendance');
+    </script>
+</body>
+</html>

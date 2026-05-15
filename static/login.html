@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - Time Sheet AFCO</title>
+    <link rel="icon" type="image/png" href="app_icon.png">
+    <link rel="apple-touch-icon" href="app_icon.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            direction: rtl;
+            text-align: right;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            max-width: 400px;
+            width: 90%;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .login-container h2 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .login-container p {
+            color: #666;
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-weight: 500;
+            text-align: right;
+        }
+
+        .alert-error {
+            background: #fee;
+            color: #c53030;
+            border: 1px solid #fed7d7;
+        }
+
+        .password-toggle {
+            position: absolute;
+            left: 15px; /* Adjust for RTL */
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-eye"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>');
+            background-repeat: no-repeat;
+            background-size: contain;
+            opacity: 0.6;
+        }
+
+        .password-toggle.hidden-password {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-eye-off"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.54 18.54 0 0 1 2.21-3.02m4.63-1.63A10.07 10.07 0 0 1 12 4c7 0 11 8 11 8a18.54 18.54 0 0 1-2.21 3.02m-4.63 1.63L12 12m0 0l-3 3m3-3l3-3"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>');
+        }
+
+        .forgot-password {
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .forgot-password a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <button onclick="toggleLang()" style="position:fixed;top:10px;left:10px;z-index:9999;background:rgba(255,255,255,.3);border:1px solid rgba(255,255,255,.5);color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:13px" id="langToggle">English</button>
+    <div class="login-container">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h2 id="loginTitle" data-ar="تسجيل الدخول" data-en="Login">تسجيل الدخول</h2>
+            <p id="loginSubtitle" data-ar="Time Sheet AFCO" data-en="Time Sheet AFCO">Time Sheet AFCO</p>
+        </div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username" data-ar="اسم المستخدم:" data-en="Username:">اسم المستخدم:</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password" data-ar="كلمة المرور:" data-en="Password:">كلمة المرور:</label>
+                <div style="position: relative;">
+                    <input type="password" id="password" required>
+                    <span class="password-toggle" onclick="togglePasswordVisibility()"></span>
+                </div>
+            </div>
+            <button type="submit" class="btn" data-ar="دخول" data-en="Login">دخول</button>
+            <div class="forgot-password">
+                <a href="#" data-ar="نسيت كلمة المرور؟" data-en="Forgot password?">نسيت كلمة المرور؟</a>
+            </div>
+        </form>
+        <div id="loginError" class="alert alert-error hidden">
+            بيانات الدخول غير صحيحة
+        </div>
+    </div>
+
+    <script>
+        let currentLang=localStorage.getItem('lang')||'ar';
+        function toggleLang(){
+            currentLang=currentLang==='ar'?'en':'ar';
+            localStorage.setItem('lang',currentLang);
+            document.documentElement.lang=currentLang;
+            document.body.style.direction=currentLang==='ar'?'rtl':'ltr';
+            document.body.style.textAlign=currentLang==='ar'?'right':'left';
+            document.getElementById('langToggle').textContent=currentLang==='ar'?'English':'العربية';
+            document.querySelectorAll('[data-ar]').forEach(el=>{el.textContent=el.getAttribute('data-'+currentLang);});
+        }
+        // restore saved language on load
+        if(localStorage.getItem('lang')==='en'){
+            currentLang='ar'; // reset to toggle correctly
+            toggleLang();
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginError = document.getElementById('loginError');
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ user_id: username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // استخدام رابط التوجيه المرسل من السيرفر، أو التحديد يدوياً كخيار احتياطي
+                    const targetUrl = data.redirect_url || (data.user && data.user.is_admin ? '/admin' : '/');
+                    console.log('Redirecting to:', targetUrl);
+                    // استخدام href بدلاً من replace لضمان تسجيل الدخول في الـ history
+                    // وإضافة timestamp لمنع الـ caching
+                    window.location.href = targetUrl + (targetUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+                } else {
+                    loginError.classList.remove('hidden');
+                    loginError.textContent = data.message || 'بيانات الدخول غير صحيحة';
+                }
+            } catch (error) {
+                console.error('Error during login:', error);
+                loginError.classList.remove('hidden');
+                loginError.textContent = 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.';
+            }
+            });
+
+            function togglePasswordVisibility() {
+                const passwordField = document.getElementById('password');
+                const passwordToggle = document.querySelector('.password-toggle');
+                if (passwordField.type === 'password') {
+                    passwordField.type = 'text';
+                    passwordToggle.classList.add('hidden-password');
+                } else {
+                    passwordField.type = 'password';
+                    passwordToggle.classList.remove('hidden-password');
+                }
+            }
+        </script>
+<footer style="text-align: center; padding: 20px; color: rgba(255,255,255,0.7); font-size: 0.9rem; position: fixed; bottom: 0; width: 100%;">
+        By Amir Ayman
+    </footer>
+</body>
+</html>

@@ -1,0 +1,2324 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel - Time Sheet AFCO</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{background:#f0f2f5;font-family:'Segoe UI',Tahoma,sans-serif}
+.sidebar{background:linear-gradient(180deg,#1a237e,#283593);min-height:100vh;width:250px;position:fixed;left:0;top:0;z-index:100;overflow-y:auto}
+.sidebar .nav-link{color:rgba(255,255,255,.7);padding:10px 18px;border-radius:8px;margin:2px 8px;font-size:13px;transition:.3s}
+.sidebar .nav-link:hover,.sidebar .nav-link.active{background:rgba(255,255,255,.15);color:#fff}
+.sidebar .nav-link i{width:22px;text-align:center;margin-right:6px}
+.main-content{margin-left:250px;padding:20px}
+.stat-card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:15px}
+.tab-section{display:none}.tab-section.active{display:block}
+.badge-count{font-size:11px;padding:2px 6px}
+.table th{background:#f8f9fa;font-size:12px;white-space:nowrap}.table td{font-size:12px;vertical-align:middle}
+.modal-header{background:linear-gradient(135deg,#1a237e,#283593);color:#fff}.modal-header .btn-close{filter:invert(1)}
+.filter-bar{background:#fff;border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.ot-row{background:#fff8e1!important}
+.lang-btn{position:fixed;top:10px;right:10px;z-index:9999}
+.stars{color:#ffc107}.priority-urgent{color:#d32f2f;font-weight:bold}.priority-high{color:#f57c00}.priority-medium{color:#1976d2}.priority-low{color:#388e3c}
+.kpi-card{text-align:center;padding:15px;border-radius:10px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.kpi-card h3{margin:0;font-size:28px;font-weight:bold}.kpi-card small{color:#666}
+@media(max-width:768px){.sidebar{width:100%;position:relative;min-height:auto}.main-content{margin-left:0}}
+</style>
+</head>
+<body>
+<button class="btn btn-sm btn-outline-primary lang-btn" onclick="toggleLanguage()"><i class="bi bi-translate"></i> <span id="langBtnText">العربية</span></button>
+
+<div class="sidebar">
+<div class="text-center py-3 border-bottom border-light border-opacity-25">
+<h6 class="text-white mb-0" data-ar="لوحة الإدارة" data-en="Admin Panel">Time Sheet AFCO</h6>
+<small class="text-white-50" id="adminRoleBadge"></small>
+</div>
+<nav class="nav flex-column py-2">
+<a class="nav-link active" href="#" onclick="showTab('dashboard')" data-tab="dashboard"><i class="bi bi-speedometer2"></i> <span data-ar="لوحة القيادة" data-en="Dashboard">Dashboard</span></a>
+<a class="nav-link" href="#" onclick="showTab('employees')" data-tab="employees"><i class="bi bi-people"></i> <span data-ar="الموظفين" data-en="Employees">Employees</span></a>
+<a class="nav-link" href="#" onclick="showTab('projects')" data-tab="projects"><i class="bi bi-building"></i> <span data-ar="المشاريع" data-en="Projects">Projects</span></a>
+<a class="nav-link" href="#" onclick="showTab('attendance-log')" data-tab="attendance-log"><i class="bi bi-card-checklist"></i> <span data-ar="سجل الحضور" data-en="Attendance Log">Attendance Log</span></a>
+<a class="nav-link" href="#" onclick="showTab('timesheet')" data-tab="timesheet"><i class="bi bi-clock-history"></i> <span data-ar="سجل المهام" data-en="Timesheet">Timesheet</span></a>
+<a class="nav-link" href="#" onclick="showTab('ot-approval')" data-tab="ot-approval"><i class="bi bi-hourglass-split"></i> <span data-ar="موافقة OT" data-en="OT Approval">OT Approval</span> <span class="badge bg-warning badge-count" id="otBadge" style="display:none">0</span></a>
+<a class="nav-link" href="#" onclick="showTab('leaves')" data-tab="leaves"><i class="bi bi-calendar-check"></i> <span data-ar="الإجازات" data-en="Leaves">Leaves</span> <span class="badge bg-info badge-count" id="leaveBadge" style="display:none">0</span></a>
+<a class="nav-link" href="#" onclick="showTab('tasks')" data-tab="tasks"><i class="bi bi-list-task"></i> <span data-ar="المهام" data-en="Tasks">Tasks</span></a>
+<a class="nav-link" href="#" onclick="showTab('ratings')" data-tab="ratings"><i class="bi bi-star"></i> <span data-ar="التقييمات" data-en="Ratings">Ratings</span></a>
+<a class="nav-link" href="#" onclick="showTab('fingerprint')" data-tab="fingerprint"><i class="bi bi-fingerprint"></i> <span data-ar="البصمة" data-en="Fingerprint">Fingerprint</span></a>
+<a class="nav-link" href="#" onclick="showTab('breaks')" data-tab="breaks"><i class="bi bi-cup-hot"></i> <span data-ar="سجل البريك" data-en="Break Log">Break Log</span></a>
+<a class="nav-link" href="#" onclick="showTab('reports')" data-tab="reports"><i class="bi bi-file-earmark-bar-graph"></i> <span data-ar="التقارير" data-en="Reports">Reports</span></a>
+<a class="nav-link" href="#" onclick="showTab('activity-feed')" data-tab="activity-feed"><i class="bi bi-broadcast"></i> <span data-ar="بث النشاط" data-en="Activity Feed">Activity Feed</span></a>
+<a class="nav-link" href="#" onclick="showTab('goals')" data-tab="goals"><i class="bi bi-bullseye"></i> <span data-ar="الأهداف" data-en="Goals">Goals</span></a>
+<a class="nav-link" href="#" onclick="showTab('org-chart')" data-tab="org-chart"><i class="bi bi-diagram-3"></i> <span data-ar="الهيكل التنظيمي" data-en="Org Chart">Org Chart</span></a>
+<a class="nav-link" href="#" onclick="showTab('audit-log')" data-tab="audit-log"><i class="bi bi-shield-check"></i> <span data-ar="سجل التدقيق" data-en="Audit Log">Audit Log</span></a>
+<a class="nav-link" href="#" onclick="showTab('dept-widgets')" data-tab="dept-widgets"><i class="bi bi-grid-3x3-gap"></i> <span data-ar="أقسام" data-en="Departments">Departments</span></a>
+<hr class="text-white-50 mx-3">
+	<a class="nav-link" href="/"><i class="bi bi-house"></i> <span data-ar="الرئيسية" data-en="Home">Home</span></a>
+	<a class="nav-link text-danger" href="#" onclick="event.preventDefault(); handleLogout();"><i class="bi bi-box-arrow-right"></i> <span data-ar="خروج" data-en="Logout">Logout</span></a>
+</nav>
+<div style="text-align: center; padding: 10px; color: rgba(255,255,255,0.5); font-size: 10px; position: absolute; bottom: 0; width: 100%;">
+            By Amir Ayman
+        </div>
+    </div>
+	
+	<div class="main-content">
+
+<!-- ══════ Dashboard ══════ -->
+<div id="tab-dashboard" class="tab-section active">
+<div class="d-flex justify-content-between align-items-center mb-2">
+<h5 data-ar="لوحة القيادة" data-en="Dashboard" class="mb-0">Dashboard</h5>
+<div>
+<button class="btn btn-sm btn-danger" onclick="runAutoClockout()"><i class="bi bi-clock"></i> Auto Clock-out</button>
+<button class="btn btn-sm btn-outline-primary ms-1" onclick="showTab('activity-feed')"><i class="bi bi-broadcast"></i> Live Feed</button>
+<button class="btn btn-sm btn-outline-success ms-1" onclick="showTab('dept-widgets')"><i class="bi bi-grid-3x3-gap"></i> Dept View</button>
+</div></div>
+<!-- KPI Cards -->
+<div class="row g-3 mb-3" id="kpiCards"></div>
+<!-- Charts Row -->
+<div class="row g-3 mb-3">
+<div class="col-md-4"><div class="stat-card"><canvas id="chartAttendance" height="250"></canvas></div></div>
+<div class="col-md-4"><div class="stat-card"><canvas id="chartDeptHours" height="250"></canvas></div></div>
+<div class="col-md-4"><div class="stat-card"><canvas id="chartLeaveTypes" height="250"></canvas></div></div>
+</div>
+<div class="row g-3 mb-3">
+<div class="col-md-6"><div class="stat-card"><canvas id="chartMonthlyHours" height="250"></canvas></div></div>
+<div class="col-md-6"><div class="stat-card"><canvas id="chartOTByEmp" height="250"></canvas></div></div>
+</div>
+<!-- OT Alert -->
+<div id="dashOTAlert" class="alert alert-warning" style="display:none"></div>
+<!-- Today Stats -->
+<div class="stat-card"><h6 data-ar="إحصائية اليوم" data-en="Today's Activity">Today's Activity</h6><div id="todayBox"></div></div>
+<!-- Recent Activity -->
+<div class="stat-card mt-3"><h6 data-ar="آخر النشاطات" data-en="Recent Activity">Recent Activity</h6><div id="recentActivity"></div></div>
+</div>
+
+<!-- ══════ Employees ══════ -->
+<div id="tab-employees" class="tab-section">
+<div class="d-flex justify-content-between align-items-center mb-3">
+<h5 data-ar="إدارة الموظفين" data-en="Employees">Employees</h5>
+<button class="btn btn-primary btn-sm" onclick="openEmpModal()"><i class="bi bi-plus-lg"></i> <span data-ar="إضافة" data-en="Add">Add</span></button>
+</div>
+<div class="table-responsive"><table class="table table-hover table-bordered table-sm"><thead><tr>
+<th>ID</th><th data-ar="معرف" data-en="User ID">User ID</th><th data-ar="الاسم" data-en="Name">Name</th><th data-ar="الإيميل" data-en="Email">Email</th>
+<th data-ar="الدور" data-en="Role">Role</th><th data-ar="القسم" data-en="Dept">Dept</th><th data-ar="المنصب" data-en="Position">Position</th>
+<th data-ar="المديرين" data-en="Managers">Managers</th><th data-ar="إجازات" data-en="Leaves">Leaves</th><th data-ar="حد OT" data-en="OT Limit">OT Limit</th>
+<th data-ar="العمليات" data-en="Actions">Actions</th>
+</tr></thead><tbody id="empBody"></tbody></table></div>
+</div>
+
+<!-- ══════ Projects ══════ -->
+<div id="tab-projects" class="tab-section">
+<div class="d-flex justify-content-between align-items-center mb-3">
+<h5 data-ar="إدارة المشاريع" data-en="Projects">Projects</h5>
+<button class="btn btn-primary btn-sm" onclick="openProjModal()"><i class="bi bi-plus-lg"></i> <span data-ar="إضافة" data-en="Add">Add</span></button>
+</div>
+<div class="table-responsive"><table class="table table-hover table-bordered table-sm"><thead><tr>
+<th>ID</th><th data-ar="رقم المشروع" data-en="No">No</th><th data-ar="اسم المشروع" data-en="Name">Name</th><th data-ar="العمليات" data-en="Actions">Actions</th>
+</tr></thead><tbody id="projBody"></tbody></table></div>
+<div id="jobsSection" style="display:none" class="stat-card mt-3">
+<div class="d-flex justify-content-between align-items-center mb-2"><h6 id="jobsTitle">Job Numbers</h6>
+<div class="d-flex gap-2"><input type="text" class="form-control form-control-sm" id="newJobNo" placeholder="Job No" style="width:120px"><input type="text" class="form-control form-control-sm" id="newJobDesc" placeholder="Description" style="width:150px"><button class="btn btn-success btn-sm" onclick="addJob()"><i class="bi bi-plus"></i></button></div>
+</div><input type="hidden" id="jobProjId"><div id="jobsList"></div>
+</div>
+</div>
+
+<!-- ══════ Attendance Log (NEW - comprehensive) ══════ -->
+<div id="tab-attendance-log" class="tab-section">
+<h5 data-ar="سجل الحضور الشامل" data-en="Attendance Log">Attendance Log</h5>
+<div class="filter-bar"><div class="row g-2">
+<div class="col-md-2"><select class="form-select form-select-sm" id="alEmp"><option value="">All Employees</option></select></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="alDept"><option value="">All Departments</option></select></div>
+<div class="col-md-2"><input type="date" class="form-control form-control-sm" id="alFrom"></div>
+<div class="col-md-2"><input type="date" class="form-control form-control-sm" id="alTo"></div>
+<div class="col-md-2">
+<button class="btn btn-sm btn-primary" onclick="loadAttendanceLog()"><i class="bi bi-search"></i> Search</button>
+<button class="btn btn-sm btn-success" onclick="exportAttendanceExcel()"><i class="bi bi-file-earmark-excel"></i></button>
+</div>
+</div></div>
+<div class="table-responsive"><table class="table table-hover table-bordered table-sm"><thead><tr>
+<th data-ar="معرف" data-en="ID">ID</th>
+<th data-ar="الاسم" data-en="Name">Name</th>
+<th data-ar="التاريخ" data-en="Date">Date</th>
+<th data-ar="دخول" data-en="Check In">Check In</th>
+<th data-ar="خروج" data-en="Check Out">Check Out</th>
+<th data-ar="إجمالي الوقت" data-en="Total Time">Total Time</th>
+<th data-ar="وقت المشاريع" data-en="Project Time">Project Time</th>
+<th data-ar="إجمالي البريك" data-en="Break Time">Break Time</th>
+<th data-ar="نوع اليوم" data-en="Day Type">Day Type</th>
+<th data-ar="OT بعد 9 ساعات" data-en="OT (after 9h)">OT (9h+)</th>
+<th data-ar="موافقة OT" data-en="OT Status">OT Status</th>
+</tr></thead><tbody id="alBody"></tbody></table></div>
+</div>
+
+<!-- ══════ Timesheet ══════ -->
+<div id="tab-timesheet" class="tab-section">
+<h5 data-ar="سجل المهام (Timesheet)" data-en="Timesheet">Timesheet</h5>
+<div class="filter-bar"><div class="row g-2">
+<div class="col-md-2"><select class="form-select form-select-sm" id="fProj" onchange="updateProjNoFilter()"><option value="">All Projects</option></select></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="fProjNo" onchange="updateProjFilter()"><option value="">All Proj No</option></select></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="fEmp"><option value="">All Employees</option></select></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="fJobNo"><option value="">All Job No</option></select></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="fType"><option value="">All Types</option><option value="WORK ORDER">Work Order</option><option value="OVERTIME">Overtime</option></select></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="fDept"><option value="">All Departments</option></select></div>
+<div class="col-md-2"><input type="date" class="form-control form-control-sm" id="fFrom"></div>
+<div class="col-md-2"><input type="date" class="form-control form-control-sm" id="fTo"></div>
+<div class="col-md-2 d-flex gap-1">
+<button class="btn btn-sm btn-primary w-100" onclick="loadTimesheet()"><i class="bi bi-search"></i> <span data-ar="بحث" data-en="Search">Search</span></button>
+<button class="btn btn-sm btn-outline-secondary w-100" onclick="clearTsFilters()"><i class="bi bi-x-circle"></i></button>
+</div>
+<div class="col-md-2"><button class="btn btn-sm btn-success w-100" onclick="exportExcel()"><i class="bi bi-file-earmark-excel"></i> Export</button></div>
+</div></div>
+<div class="table-responsive"><table class="table table-hover table-bordered table-sm"><thead><tr>
+<th>ID</th><th data-ar="التاريخ" data-en="Date">Date</th><th data-ar="معرف" data-en="Emp">Emp</th><th data-ar="الاسم" data-en="Name">Name</th>
+<th data-ar="رقم المشروع" data-en="Proj No">Proj No</th><th data-ar="المشروع" data-en="Project">Project</th><th>Job No</th>
+<th data-ar="المهمة" data-en="Task">Task</th><th data-ar="الوصف" data-en="Desc">Desc</th><th data-ar="النوع" data-en="Type">Type</th>
+<th data-ar="البدء" data-en="Start">Start</th><th data-ar="الانتهاء" data-en="End">End</th><th data-ar="الإجمالي" data-en="Total">Total</th>
+<th data-ar="تعديل" data-en="Edit">Edit</th>
+</tr></thead><tbody id="tsBody"></tbody></table></div>
+</div>
+
+<!-- ══════ OT Approval ══════ -->
+<div id="tab-ot-approval" class="tab-section">
+<h5 data-ar="طلبات الوقت الإضافي" data-en="Overtime Requests">Overtime Requests</h5>
+<div class="filter-bar"><div class="row g-2">
+<div class="col-md-3"><select class="form-select form-select-sm" id="otFStatus"><option value="pending">Pending</option><option value="">All</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div>
+<div class="col-md-3"><button class="btn btn-sm btn-primary" onclick="loadOTRequests()"><i class="bi bi-search"></i></button></div>
+</div></div>
+<div id="otContainer"></div>
+</div>
+
+<!-- ══════ Leaves ══════ -->
+<div id="tab-leaves" class="tab-section">
+<h5 data-ar="إدارة الإجازات" data-en="Leave Management">Leave Management</h5>
+<div class="filter-bar"><div class="row g-2">
+<div class="col-md-2"><select class="form-select form-select-sm" id="lvFStatus"><option value="pending">Pending</option><option value="">All</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="lvFCat"><option value="">All Types</option><option value="annual">Annual</option><option value="sick">Sick</option><option value="casual">Casual</option></select></div>
+<div class="col-md-2"><button class="btn btn-sm btn-primary" onclick="loadLeaves()"><i class="bi bi-search"></i></button></div>
+<div class="col-md-2"><button class="btn btn-sm btn-outline-info" onclick="toggleBalances()"><i class="bi bi-pie-chart"></i> <span data-ar="أرصدة" data-en="Balances">Balances</span></button></div>
+<div class="col-md-2"><button class="btn btn-sm btn-success" onclick="exportLeavesExcel()"><i class="bi bi-file-earmark-excel"></i> <span data-ar="تصدير" data-en="Export">Export</span></button></div>
+<div class="col-md-2"><button class="btn btn-sm btn-warning" onclick="openAdminLeaveModal()"><i class="bi bi-plus-lg"></i> <span data-ar="طلب إجازة" data-en="Request Leave">Request Leave</span></button></div>
+<div class="card-header d-flex justify-content-between align-items-center">
+
+    <span>Leaves</span>
+
+    <div id="uploadBox" style="display:none;">
+        <input type="file" id="leaveFile" accept=".xlsx"
+               class="form-control form-control-sm d-inline"
+               style="width: 180px;" />
+
+        <button onclick="uploadLeaves()" class="btn btn-success btn-sm">
+            📤 Upload Excel
+        </button>
+    </div>
+</div>
+
+</div>
+
+</div>
+<div id="balancesBox" style="display:none" class="stat-card"></div>
+<div class="table-responsive"><table class="table table-hover table-bordered table-sm"><thead><tr>
+<th>ID</th><th data-ar="الموظف" data-en="Employee">Employee</th><th data-ar="النوع" data-en="Type">Type</th>
+<th data-ar="من" data-en="From">From</th><th data-ar="إلى" data-en="To">To</th><th data-ar="المدة" data-en="Duration">Duration</th>
+<th data-ar="نصف يوم" data-en="Half">Half</th><th data-ar="السبب" data-en="Reason">Reason</th><th data-ar="مرفق" data-en="Attach">Attach</th>
+<th data-ar="الحالة" data-en="Status">Status</th><th data-ar="بواسطة" data-en="By">By</th><th data-ar="العمليات" data-en="Actions">Actions</th>
+</tr></thead><tbody id="lvBody"></tbody></table></div>
+</div>
+
+<!-- ══════ Tasks ══════ -->
+<div id="tab-tasks" class="tab-section">
+<div class="d-flex justify-content-between align-items-center mb-3">
+<h5 data-ar="إدارة المهام" data-en="Tasks">Tasks</h5>
+<button class="btn btn-primary btn-sm" onclick="openTaskModal()"><i class="bi bi-plus-lg"></i> <span data-ar="مهمة جديدة" data-en="New Task">New Task</span></button>
+</div>
+<div class="table-responsive"><table class="table table-hover table-bordered table-sm"><thead><tr>
+<th>ID</th><th data-ar="العنوان" data-en="Title">Title</th><th data-ar="مكلف إلى" data-en="To">To</th>
+<th data-ar="بواسطة" data-en="By">By</th><th data-ar="المشروع" data-en="Project">Project</th>
+<th data-ar="الموعد" data-en="Due">Due</th><th data-ar="الأولوية" data-en="Priority">Priority</th>
+<th data-ar="الحالة" data-en="Status">Status</th><th data-ar="العمليات" data-en="Actions">Actions</th>
+</tr></thead><tbody id="taskBody"></tbody></table></div>
+</div>
+
+<!-- ══════ Ratings ══════ -->
+<div id="tab-ratings" class="tab-section">
+<div class="d-flex justify-content-between align-items-center mb-3">
+<h5 data-ar="تقييم الموظفين" data-en="Ratings">Ratings</h5>
+<button class="btn btn-primary btn-sm" onclick="openRateModal()"><i class="bi bi-star"></i> <span data-ar="تقييم جديد" data-en="New Rating">New Rating</span></button>
+</div>
+<div class="table-responsive"><table class="table table-hover table-bordered table-sm"><thead><tr>
+<th data-ar="الموظف" data-en="Employee">Employee</th><th data-ar="الشهر" data-en="Month">Month</th>
+<th data-ar="التقييم" data-en="Rating">Rating</th><th data-ar="بواسطة" data-en="By">By</th>
+<th data-ar="ملاحظات" data-en="Notes">Notes</th>
+</tr></thead><tbody id="rateBody"></tbody></table></div>
+</div>
+
+<!-- ══════ Fingerprint ══════ -->
+<div id="tab-fingerprint" class="tab-section">
+<div class="d-flex justify-content-between align-items-center mb-3">
+<h5 data-ar="سجل البصمة" data-en="Fingerprint">Fingerprint</h5>
+<button class="btn btn-warning btn-sm" onclick="syncFP()"><i class="bi bi-arrow-repeat"></i> <span data-ar="جلب البصمات" data-en="Sync">Sync</span></button>
+</div>
+<div class="filter-bar"><div class="row g-2">
+<div class="col-md-3"><select class="form-select form-select-sm" id="fpEmp"><option value="">All Employees</option></select></div>
+<div class="col-md-3"><input type="date" class="form-control form-control-sm" id="fpFrom"></div>
+<div class="col-md-3"><input type="date" class="form-control form-control-sm" id="fpTo"></div>
+<div class="col-md-3"><button class="btn btn-sm btn-primary" onclick="loadFP()"><i class="bi bi-search"></i></button></div>
+</div></div>
+<div id="fpMsg" class="mb-2"></div>
+<div class="table-responsive"><table class="table table-hover table-bordered table-sm"><thead><tr>
+<th data-ar="معرف" data-en="User ID">User ID</th><th data-ar="التاريخ" data-en="Date">Date</th><th data-ar="الوقت" data-en="Time">Time</th><th data-ar="نوع" data-en="Type">Type</th>
+</tr></thead><tbody id="fpBody"></tbody></table></div>
+</div>
+
+<!-- ══════ Break Log ══════ -->
+<div id="tab-breaks" class="tab-section">
+<h5 data-ar="سجل فترات الراحة" data-en="Break Log">Break Log</h5>
+<div class="filter-bar"><div class="row g-2">
+<div class="col-md-3"><select class="form-select form-select-sm" id="brkEmp"><option value="">All Employees</option></select></div>
+<div class="col-md-3"><input type="date" class="form-control form-control-sm" id="brkFrom"></div>
+<div class="col-md-3"><input type="date" class="form-control form-control-sm" id="brkTo"></div>
+<div class="col-md-3"><button class="btn btn-sm btn-primary" onclick="loadBreaks()"><i class="bi bi-search"></i></button></div>
+</div></div>
+<div id="brkSummary" class="alert alert-info d-none"></div>
+<div class="table-responsive"><table class="table table-hover table-bordered table-sm"><thead><tr>
+<th>ID</th><th data-ar="الموظف" data-en="Employee">Employee</th>
+<th data-ar="بداية" data-en="Start">Start</th><th data-ar="نهاية" data-en="End">End</th>
+<th data-ar="المدة (دق)" data-en="Duration">Duration</th><th data-ar="السبب" data-en="Reason">Reason</th>
+<th data-ar="الحالة" data-en="Status">Status</th><th data-ar="تعديل" data-en="Edit">Edit</th>
+</tr></thead><tbody id="brkBody"></tbody></table></div>
+</div>
+
+<!-- ══════ Reports ══════ -->
+<div id="tab-reports" class="tab-section">
+<h5 data-ar="التقارير" data-en="Reports">Reports</h5>
+<div class="row g-3 mb-3">
+<!-- Report Cards -->
+<div class="col-md-4"><div class="stat-card text-center" style="cursor:pointer" onclick="showReport('monthly-summary')">
+<i class="bi bi-calendar-month" style="font-size:32px;color:#1a237e"></i>
+<h6 class="mt-2" data-ar="ملخص شهري" data-en="Monthly Summary">Monthly Summary</h6>
+<small class="text-muted" data-ar="ساعات العمل والإضافي لكل موظف" data-en="Work & OT hours per employee">Work & OT hours per employee</small>
+</div></div>
+<div class="col-md-4"><div class="stat-card text-center" style="cursor:pointer" onclick="showReport('project-hours')">
+<i class="bi bi-building" style="font-size:32px;color:#283593"></i>
+<h6 class="mt-2" data-ar="ساعات المشاريع" data-en="Project Hours">Project Hours</h6>
+<small class="text-muted" data-ar="إجمالي الساعات لكل مشروع" data-en="Total hours per project">Total hours per project</small>
+</div></div>
+<div class="col-md-4"><div class="stat-card text-center" style="cursor:pointer" onclick="showReport('overtime-report')">
+<i class="bi bi-clock-history" style="font-size:32px;color:#e67e22"></i>
+<h6 class="mt-2" data-ar="تقرير الأوفرتايم" data-en="Overtime Report">Overtime Report</h6>
+<small class="text-muted" data-ar="تفاصيل الأوفرتايم والموافقات" data-en="OT details & approvals">OT details & approvals</small>
+</div></div>
+<div class="col-md-4"><div class="stat-card text-center" style="cursor:pointer" onclick="showReport('leave-report')">
+<i class="bi bi-calendar-check" style="font-size:32px;color:#27ae60"></i>
+<h6 class="mt-2" data-ar="تقرير الإجازات" data-en="Leave Report">Leave Report</h6>
+<small class="text-muted" data-ar="أرصدة واستخدام الإجازات" data-en="Leave balances & usage">Leave balances & usage</small>
+</div></div>
+<div class="col-md-4"><div class="stat-card text-center" style="cursor:pointer" onclick="showReport('attendance-report')">
+<i class="bi bi-person-check" style="font-size:32px;color:#2980b9"></i>
+<h6 class="mt-2" data-ar="تقرير الحضور" data-en="Attendance Report">Attendance Report</h6>
+<small class="text-muted" data-ar="الحضور والغياب والتأخير" data-en="Presence, absence & late">Presence, absence & late</small>
+</div></div>
+<div class="col-md-4"><div class="stat-card text-center" style="cursor:pointer" onclick="showReport('department-report')">
+<i class="bi bi-diagram-3" style="font-size:32px;color:#8e44ad"></i>
+<h6 class="mt-2" data-ar="تقرير الأقسام" data-en="Department Report">Department Report</h6>
+<small class="text-muted" data-ar="إحصائيات كل قسم" data-en="Stats per department">Stats per department</small>
+</div></div>
+<div class="col-md-4"><div class="stat-card text-center" style="cursor:pointer" onclick="showReport('employee-detail')">
+<i class="bi bi-person-lines-fill" style="font-size:32px;color:#c0392b"></i>
+<h6 class="mt-2" data-ar="تقرير موظف" data-en="Employee Detail">Employee Detail</h6>
+<small class="text-muted" data-ar="تفاصيل موظف محدد" data-en="Detailed employee report">Detailed employee report</small>
+</div></div>
+<div class="col-md-4"><div class="stat-card text-center" style="cursor:pointer" onclick="showReport('project-comparison')">
+<i class="bi bi-bar-chart-line" style="font-size:32px;color:#16a085"></i>
+<h6 class="mt-2" data-ar="مقارنة المشاريع" data-en="Project Comparison">Project Comparison</h6>
+<small class="text-muted" data-ar="مقارنة ساعات المشاريع" data-en="Compare project hours">Compare project hours</small>
+</div></div>
+<div class="col-md-4"><div class="stat-card text-center" style="cursor:pointer" onclick="showReport('break-report')">
+<i class="bi bi-cup-hot" style="font-size:32px;color:#d35400"></i>
+<h6 class="mt-2" data-ar="تقرير البريك" data-en="Break Report">Break Report</h6>
+<small class="text-muted" data-ar="تحليل فترات الراحة" data-en="Break time analysis">Break time analysis</small>
+</div></div>
+<div class="col-md-4"><div class="stat-card text-center" style="cursor:pointer;border:2px solid #e74c3c" onclick="showReport('not-started-today')">
+<i class="bi bi-person-x" style="font-size:32px;color:#e74c3c"></i>
+<h6 class="mt-2" data-ar="لم يبدأ اليوم" data-en="Not Started Today">Not Started Today</h6>
+<small class="text-muted" data-ar="موظفون لم يبدأوا جلسة اليوم" data-en="Employees who haven't started today">Employees who haven't started today</small>
+</div></div>
+<div class="col-md-4"><div class="stat-card text-center" style="cursor:pointer" onclick="showReport('daily-detail')">
+<i class="bi bi-calendar-day" style="font-size:32px;color:#1abc9c"></i>
+<h6 class="mt-2" data-ar="تفاصيل يومية" data-en="Daily Detail">Daily Detail</h6>
+<small class="text-muted" data-ar="تفاصيل الحضور اليومي" data-en="Daily attendance details">Daily attendance details</small>
+</div></div>
+<div class="col-md-4"><div class="stat-card text-center" style="cursor:pointer" onclick="showReport('attendance-rate')">
+<i class="bi bi-graph-up" style="font-size:32px;color:#3498db"></i>
+<h6 class="mt-2" data-ar="نسبة الحضور" data-en="Attendance Rate">Attendance Rate</h6>
+<small class="text-muted" data-ar="نسبة الحضور لكل موظف" data-en="Attendance rate per employee">Attendance rate per employee</small>
+</div></div>
+</div>
+<!-- Report Filter -->
+<div class="filter-bar d-none" id="reportFilter">
+<div class="row g-2">
+<div class="col-md-2"><select class="form-select form-select-sm" id="rptEmp"><option value="">All Employees</option></select></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="rptDept"><option value="">All Departments</option></select></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="rptMonth"></select></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="rptYear"></select></div>
+<div class="col-md-2"><input type="date" class="form-control form-control-sm" id="rptFrom"></div>
+<div class="col-md-2"><input type="date" class="form-control form-control-sm" id="rptTo"></div>
+</div>
+<div class="mt-2">
+<button class="btn btn-sm btn-primary" onclick="generateReport()"><i class="bi bi-play-fill"></i> Generate</button>
+<button class="btn btn-sm btn-success" onclick="exportReportExcel()"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
+<button class="btn btn-sm btn-outline-secondary" onclick="hideReport()"><i class="bi bi-arrow-left"></i> Back</button>
+</div>
+</div>
+<!-- Report Chart -->
+<div class="stat-card d-none" id="reportChart"><canvas id="rptCanvas" height="300"></canvas></div>
+<!-- Report Table -->
+<div class="d-none" id="reportTable"><div class="table-responsive" id="reportTableContent"></div></div>
+</div>
+
+<!-- ══════ Activity Feed ══════ -->
+<div id="tab-activity-feed" class="tab-section">
+<h5 data-ar="بث النشاط المباشر" data-en="Real-time Activity Feed">Real-time Activity Feed</h5>
+<div class="filter-bar">
+<div class="row g-2">
+<div class="col-md-3"><select class="form-select form-select-sm" id="feedDept"><option value="">All Departments</option></select></div>
+<div class="col-md-3"><select class="form-select form-select-sm" id="feedLimit"><option value="50">Last 50</option><option value="100">Last 100</option><option value="200">Last 200</option></select></div>
+<div class="col-md-3"><button class="btn btn-sm btn-primary" onclick="loadActivityFeed()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+<button class="btn btn-sm btn-outline-success" id="autoRefreshBtn" onclick="toggleAutoRefresh()"><i class="bi bi-broadcast"></i> Auto-Refresh: OFF</button></div>
+</div></div>
+<div id="feedBody" class="mt-2"></div>
+</div>
+
+<!-- ══════ Goals ══════ -->
+<div id="tab-goals" class="tab-section">
+<h5 data-ar="أهداف الساعات الشهرية" data-en="Monthly Hour Goals">Monthly Hour Goals</h5>
+<div class="filter-bar">
+<div class="row g-2">
+<div class="col-md-2"><select class="form-select form-select-sm" id="goalMonth"></select></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="goalYear"></select></div>
+<div class="col-md-2"><button class="btn btn-sm btn-primary" onclick="loadGoals()"><i class="bi bi-search"></i> Load</button></div>
+<div class="col-md-3"><button class="btn btn-sm btn-success" onclick="showBulkGoalModal()"><i class="bi bi-plus-circle"></i> Set Goals for All</button></div>
+<div class="col-md-3"><button class="btn btn-sm btn-outline-primary" onclick="showSetGoalModal()"><i class="bi bi-person-plus"></i> Set Individual Goal</button></div>
+</div></div>
+<div class="row g-3 mt-2" id="goalCards"></div>
+<div class="table-responsive mt-3"><table class="table table-sm table-bordered table-hover"><thead><tr><th>Employee</th><th>Department</th><th>Target (h)</th><th>Actual (h)</th><th>Billable (h)</th><th>Progress</th><th>Action</th></tr></thead><tbody id="goalBody"></tbody></table></div>
+</div>
+
+<!-- ══════ Org Chart ══════ -->
+<div id="tab-org-chart" class="tab-section">
+<h5 data-ar="الهيكل التنظيمي" data-en="Organization Chart">Organization Chart</h5>
+<div class="stat-card" id="orgChartContainer" style="min-height:400px;overflow:auto"></div>
+</div>
+
+<!-- ══════ Audit Log ══════ -->
+<div id="tab-audit-log" class="tab-section">
+<h5 data-ar="سجل التدقيق" data-en="Audit Log">Audit Log</h5>
+<div class="filter-bar">
+<div class="row g-2">
+<div class="col-md-2"><select class="form-select form-select-sm" id="auditEmp"><option value="">All Users</option></select></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="auditAction"><option value="">All Actions</option>
+<option value="session_start">Session Start</option><option value="session_end">Session End</option>
+<option value="break_start">Break Start</option><option value="break_end">Break End</option>
+<option value="leave_request">Leave Request</option><option value="leave_approve">Leave Approve</option>
+<option value="ot_request">OT Request</option><option value="ot_approve">OT Approve</option>
+<option value="login">Login</option><option value="employee_edit">Employee Edit</option>
+</select></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="auditEntity"><option value="">All Types</option>
+<option value="session">Session</option><option value="break">Break</option><option value="leave">Leave</option>
+<option value="overtime">Overtime</option><option value="employee">Employee</option><option value="system">System</option>
+</select></div>
+<div class="col-md-2"><input type="date" class="form-control form-control-sm" id="auditFrom"></div>
+<div class="col-md-2"><input type="date" class="form-control form-control-sm" id="auditTo"></div>
+<div class="col-md-2"><button class="btn btn-sm btn-primary" onclick="loadAuditLog()"><i class="bi bi-search"></i> Search</button></div>
+</div></div>
+<div class="table-responsive mt-2"><table class="table table-sm table-bordered table-striped"><thead><tr><th>#</th><th>Time</th><th>User</th><th>Action</th><th>Entity</th><th>Description</th><th>IP</th></tr></thead><tbody id="auditBody"></tbody></table></div>
+<nav><ul class="pagination pagination-sm" id="auditPagination"></ul></nav>
+</div>
+
+<!-- ══════ Department Widgets ══════ -->
+<div id="tab-dept-widgets" class="tab-section">
+<h5 data-ar="إحصائيات الأقسام" data-en="Department Overview">Department Overview</h5>
+<button class="btn btn-sm btn-primary mb-3" onclick="loadDeptWidgets()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+<div class="row g-3" id="deptWidgetsContainer"></div>
+</div>
+
+<!-- ══════ Employee Profile Modal ══════ -->
+<div class="modal fade" id="profileModal" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content">
+<div class="modal-header"><h6 class="modal-title"><i class="bi bi-person-circle"></i> Employee Profile</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body" id="profileBody"></div>
+</div></div></div>
+
+</div><!-- main-content -->
+
+<!-- ══════ MODALS ══════ -->
+<!-- Employee Modal -->
+<div class="modal fade" id="empModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header">
+<h6 class="modal-title" id="empModalTitle">Add Employee</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div><div class="modal-body"><input type="hidden" id="empEditId"><div class="row g-2">
+<div class="col-md-4"><label class="form-label small">User ID</label><input type="text" class="form-control form-control-sm" id="empUserId"></div>
+<div class="col-md-4"><label class="form-label small">Name</label><input type="text" class="form-control form-control-sm" id="empName"></div>
+<div class="col-md-4"><label class="form-label small">Password</label><input type="password" class="form-control form-control-sm" id="empPass"></div>
+<div class="col-md-4"><label class="form-label small">Email</label><input type="email" class="form-control form-control-sm" id="empEmail" placeholder="user@company.com"></div>
+<div class="col-md-4"><label class="form-label small">Role</label><select class="form-select form-select-sm" id="empRole">
+<option value="employee">Employee</option><option value="manager">Manager</option><option value="hr">HR Admin</option><option value="planning">Planning Admin</option><option value="admin">Admin</option>
+</select></div>
+<div class="col-md-4"><label class="form-label small">Department</label><input type="text" class="form-control form-control-sm" id="empDept"></div>
+<div class="col-md-4"><label class="form-label small">Position</label><input type="text" class="form-control form-control-sm" id="empPos"></div>
+<div class="col-md-4"><label class="form-label small">OT Monthly Limit</label><input type="number" class="form-control form-control-sm" id="empOTLimit" placeholder="Empty=Unlimited"></div>
+<div class="col-md-4"><label class="form-label small">Annual Leave</label><input type="number" class="form-control form-control-sm" id="empAL" value="30"></div>
+<div class="col-md-4"><label class="form-label small">Sick Leave</label><input type="number" class="form-control form-control-sm" id="empSL" value="15"></div>
+<div class="col-md-4"><label class="form-label small">Casual Leave</label><input type="number" class="form-control form-control-sm" id="empCL" value="7"></div>
+<div class="col-md-12"><label class="form-label small">Managers (Ctrl+Click for multiple)</label><select class="form-select form-select-sm" id="empManagers" multiple size="4"></select></div>
+</div></div><div class="modal-footer">
+<button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+<button class="btn btn-primary btn-sm" onclick="saveEmp()">Save</button>
+</div></div></div></div>
+
+<!-- Edit Session Modal -->
+<div class="modal fade" id="editSessModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header">
+<h6 class="modal-title">Edit Session</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div><div class="modal-body"><input type="hidden" id="esId">
+<div class="mb-2"><label class="form-label small">Hour Type</label><select class="form-select form-select-sm" id="esType"><option>WORK ORDER</option><option>OVERTIME</option><option>TRAINING</option><option>MEETING</option><option>IDLE</option><option>VACATION</option></select></div>
+<div class="mb-2"><label class="form-label small">Job No</label><input type="text" class="form-control form-control-sm" id="esJob"></div>
+<div class="mb-2"><label class="form-label small">Task</label><input type="text" class="form-control form-control-sm" id="esTask"></div>
+<div class="mb-2"><label class="form-label small">Description</label><textarea class="form-control form-control-sm" id="esDesc" rows="2"></textarea></div>
+	<div class="mb-2">
+  <label class="form-label small">Start Time</label>
+  <input type="datetime-local" class="form-control form-control-sm" id="esStart">
+</div>
+
+<div class="mb-2">
+  <label class="form-label small">End Time</label>
+  <input type="datetime-local" class="form-control form-control-sm" id="esEnd">
+</div>
+</div><div class="modal-footer">
+<button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+<button class="btn btn-primary btn-sm" onclick="saveSessEdit()">Save</button>
+</div></div></div></div>
+
+<!-- Project Modal -->
+<div class="modal fade" id="projModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header">
+<h6 class="modal-title" id="projModalTitle">Add Project</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div><div class="modal-body"><input type="hidden" id="projEditId">
+<div class="mb-2"><label class="form-label small">Project Number</label><input type="text" class="form-control form-control-sm" id="projNo"></div>
+<div class="mb-2"><label class="form-label small">Project Name</label><input type="text" class="form-control form-control-sm" id="projName"></div>
+</div><div class="modal-footer">
+<button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+<button class="btn btn-primary btn-sm" onclick="saveProj()">Save</button>
+</div></div></div></div>
+
+<!-- Task Modal -->
+<div class="modal fade" id="taskModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header">
+<h6 class="modal-title">New Task</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div><div class="modal-body">
+<div class="mb-2"><label class="form-label small">Title</label><input type="text" class="form-control form-control-sm" id="tkTitle"></div>
+<div class="mb-2"><label class="form-label small">Description</label><textarea class="form-control form-control-sm" id="tkDesc" rows="2"></textarea></div>
+<div class="mb-2"><label class="form-label small">Assign To</label><select class="form-select form-select-sm" id="tkTo"></select></div>
+<div class="mb-2"><label class="form-label small">Project</label><select class="form-select form-select-sm" id="tkProj"><option value="">None</option></select></div>
+<div class="mb-2"><label class="form-label small">Due Date</label><input type="date" class="form-control form-control-sm" id="tkDue"></div>
+<div class="mb-2"><label class="form-label small">Priority</label><select class="form-select form-select-sm" id="tkPri"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="urgent">Urgent</option></select></div>
+</div><div class="modal-footer">
+<button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+<button class="btn btn-primary btn-sm" onclick="saveTask()">Save</button>
+</div></div></div></div>
+
+<!-- Rating Modal -->
+<div class="modal fade" id="rateModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header">
+<h6 class="modal-title">Rate Employee</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div><div class="modal-body">
+<div class="mb-2"><label class="form-label small">Employee</label><select class="form-select form-select-sm" id="rtEmp"></select></div>
+<div class="row g-2 mb-2"><div class="col-6"><label class="form-label small">Month</label><input type="number" class="form-control form-control-sm" id="rtMonth" min="1" max="12"></div>
+<div class="col-6"><label class="form-label small">Year</label><input type="number" class="form-control form-control-sm" id="rtYear"></div></div>
+<div class="mb-2"><label class="form-label small">Rating (1-5)</label><input type="range" class="form-range" id="rtVal" min="1" max="5" value="3" oninput="updStars()"><div class="text-center stars" id="rtStars">&#9733;&#9733;&#9733;&#9734;&#9734;</div></div>
+<div class="mb-2"><label class="form-label small">Notes</label><textarea class="form-control form-control-sm" id="rtNotes" rows="2"></textarea></div>
+<div class="mb-2"><label class="form-label small">Strengths</label><textarea class="form-control form-control-sm" id="rtStr" rows="2"></textarea></div>
+<div class="mb-2"><label class="form-label small">Improvements</label><textarea class="form-control form-control-sm" id="rtImp" rows="2"></textarea></div>
+</div><div class="modal-footer">
+<button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+<button class="btn btn-primary btn-sm" onclick="saveRate()">Save</button>
+</div></div></div></div>
+
+<!-- Edit Leave Modal -->
+<div class="modal fade" id="editLvModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header">
+<h6 class="modal-title">Edit Leave</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div><div class="modal-body"><input type="hidden" id="eLvId">
+<div class="mb-2"><label class="form-label small">Type</label><select class="form-select form-select-sm" id="eLvCat"><option value="annual">Annual</option><option value="sick">Sick</option><option value="casual">Casual</option></select></div>
+<div class="mb-2"><label class="form-label small">From</label><input type="date" class="form-control form-control-sm" id="eLvStart"></div>
+<div class="mb-2"><label class="form-label small">To</label><input type="date" class="form-control form-control-sm" id="eLvEnd"></div>
+<div class="mb-2"><label class="form-label small">Duration</label><input type="number" class="form-control form-control-sm" id="eLvDur" step="0.5" min="0.5"></div>
+<div class="form-check mb-2"><input type="checkbox" class="form-check-input" id="eLvHalf"><label class="form-check-label small">Half day</label></div>
+<div class="mb-2"><label class="form-label small">Status</label><select class="form-select form-select-sm" id="eLvStat"><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div>
+</div><div class="modal-footer">
+<button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+<button class="btn btn-primary btn-sm" onclick="saveLvEdit()">Save</button>
+</div></div></div></div>
+
+<!-- Edit Break Modal -->
+<div class="modal fade" id="editBrkModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header">
+<h6 class="modal-title">Edit Break</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div><div class="modal-body"><input type="hidden" id="brkEditId">
+<div class="mb-2"><label class="form-label small">Start Time</label><input type="datetime-local" class="form-control form-control-sm" id="brkEditStart"></div>
+<div class="mb-2"><label class="form-label small">End Time</label><input type="datetime-local" class="form-control form-control-sm" id="brkEditEnd"></div>
+<div class="mb-2"><label class="form-label small">Reason</label><input type="text" class="form-control form-control-sm" id="brkEditReason"></div>
+</div><div class="modal-footer">
+<button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+<button class="btn btn-primary btn-sm" onclick="saveBrkEdit()">Save</button>
+</div></div></div></div>
+
+<!-- Admin Leave Request Modal -->
+<div class="modal fade" id="adminLeaveModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header">
+<h6 class="modal-title">Request Leave for Employee</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div><div class="modal-body">
+<div class="mb-2"><label class="form-label small">Employee</label><select class="form-select form-select-sm" id="admLvEmp"></select></div>
+<div class="mb-2"><label class="form-label small">Type</label><select class="form-select form-select-sm" id="admLvCat"><option value="annual">Annual</option><option value="sick">Sick</option><option value="casual">Casual</option></select></div>
+<div class="mb-2"><label class="form-label small">From</label><input type="date" class="form-control form-control-sm" id="admLvFrom"></div>
+<div class="mb-2"><label class="form-label small">To</label><input type="date" class="form-control form-control-sm" id="admLvTo"></div>
+<div class="mb-2"><label class="form-label small">Duration (days)</label><input type="number" class="form-control form-control-sm" id="admLvDur" value="1" step="0.5" min="0.5"></div>
+<div class="form-check mb-2"><input type="checkbox" class="form-check-input" id="admLvHalf"><label class="form-check-label small">Half day</label></div>
+<div class="mb-2"><label class="form-label small">Reason</label><input type="text" class="form-control form-control-sm" id="admLvReason"></div>
+</div><div class="modal-footer">
+<button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+<button class="btn btn-primary btn-sm" onclick="submitAdminLeave()">Submit & Approve</button>
+</div></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════
+   ATTENDANCE SYSTEM - Admin Panel v74
+   ═══════════════════════════════════════════════════════════ */
+
+let currentLang = localStorage.getItem('lang') || 'en';
+let allEmployees = [], allProjects = [], chartInstances = {};
+let currentReport = '';
+
+// ── Language Toggle ──
+function toggleLanguage() {
+    currentLang = currentLang === 'ar' ? 'en' : 'ar';
+    localStorage.setItem('lang', currentLang);
+    document.documentElement.lang = currentLang;
+    document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+    const bsLink = document.querySelector('link[href*="bootstrap"]');
+    if (bsLink) {
+        if (currentLang === 'ar') bsLink.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css';
+        else bsLink.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css';
+    }
+    // Fix sidebar position for RTL/LTR
+    const sidebar = document.querySelector('.sidebar');
+    const main = document.querySelector('.main-content');
+    if (currentLang === 'ar') { sidebar.style.right='0';sidebar.style.left='auto';main.style.marginRight='250px';main.style.marginLeft='0'; }
+    else { sidebar.style.left='0';sidebar.style.right='auto';main.style.marginLeft='250px';main.style.marginRight='0'; }
+    document.getElementById('langBtnText').textContent = currentLang === 'ar' ? 'English' : 'العربية';
+    document.querySelectorAll('[data-ar]').forEach(el => { el.textContent = el.getAttribute('data-' + currentLang) || el.textContent; });
+}
+
+// ── Tab Navigation ──
+function showTab(name) {
+    document.querySelectorAll('.tab-section').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+    const tab = document.getElementById('tab-' + name);
+    if (tab) tab.classList.add('active');
+    const link = document.querySelector(`[data-tab="${name}"]`);
+    if (link) link.classList.add('active');
+    if (name === 'dashboard') loadDashboard();
+    else if (name === 'employees') loadEmployees();
+    else if (name === 'projects') loadProjects();
+    else if (name === 'attendance-log') loadAttendanceLog();
+    else if (name === 'timesheet') loadTimesheet();
+    else if (name === 'ot-approval') loadOTRequests();
+    else if (name === 'leaves') loadLeaves();
+    else if (name === 'tasks') loadTasks();
+    else if (name === 'ratings') loadRatings();
+    else if (name === 'fingerprint') loadFP();
+    else if (name === 'breaks') loadBreaks();
+    else if (name === 'reports') initReportFilters();
+    else if (name === 'activity-feed') loadActivityFeed();
+    else if (name === 'goals') { initGoalFilters(); loadGoals(); }
+    else if (name === 'org-chart') loadOrgChart();
+    else if (name === 'audit-log') loadAuditLog();
+    else if (name === 'dept-widgets') loadDeptWidgets();
+}
+
+// ── API Helper ──
+async function api(url, method='GET', body=null) {
+    const opts = {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'   // ✅ مهم جدًا للـ session
+    };
+
+    if (body) opts.body = JSON.stringify(body);
+
+    try {
+        const r = await fetch(url, opts);
+
+        const contentType = r.headers.get("content-type");
+
+        // ✅ لو الرد مش JSON
+        if (!r.ok || !contentType || !contentType.includes("application/json")) {
+            const text = await r.text();
+            console.error("❌ API Response (NOT JSON):", text);
+
+            return { error: `HTTP ${r.status} - Not JSON response` };
+        }
+
+        return await r.json();
+
+    } catch(e) {
+        console.error('API error:', e);
+        return { error: 'Network error' };
+    }
+}
+function roleLabel(r) { return {admin:'Admin',hr:'HR Admin',planning:'Planning',manager:'Manager',employee:'Employee'}[r]||r; }
+
+// ── Utility: HH:MM to decimal hours ──
+function toHours(hhmm) { if(!hhmm) return 0; const p = String(hhmm).split(':'); return parseInt(p[0]) + (parseInt(p[1]||0)/60); }
+
+// ── Destroy chart helper ──
+function destroyChart(name) { if(chartInstances[name]) { chartInstances[name].destroy(); delete chartInstances[name]; } }
+
+// ═══════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════
+async function loadDashboard() {
+    const now = new Date();
+    const month = now.getMonth()+1, year = now.getFullYear();
+
+    // Fetch dashboard stats
+    const data = await api(`/api/admin/dashboard/stats?month=${month}&year=${year}`);
+    const stats = data.stats || [];
+
+    // KPI Cards
+    const totalEmps = allEmployees.length || stats.length;
+    const totalRegH = stats.reduce((s,e) => s + toHours(e.regular_hours), 0);
+    const totalOTH = stats.reduce((s,e) => s + toHours(e.overtime_hours), 0);
+    const activeNow = (await api('/api/timesheet/today-stats')).employees || [];
+    const activeCount = activeNow.filter(e => e.active_now).length;
+
+    // Pending counts
+    const pendingOT = (await api('/api/overtime-requests?status=pending')).overtime_requests || [];
+    const pendingLv = (await api('/api/leave-requests?status=pending')).leave_requests || [];
+
+    document.getElementById('kpiCards').innerHTML = `
+        <div class="col-md-2"><div class="kpi-card"><h3 class="text-primary">${totalEmps}</h3><small>Total Employees</small></div></div>
+        <div class="col-md-2"><div class="kpi-card"><h3 class="text-success">${activeCount}</h3><small>Active Now</small></div></div>
+        <div class="col-md-2"><div class="kpi-card"><h3 class="text-info">${totalRegH.toFixed(1)}</h3><small>Regular Hours</small></div></div>
+        <div class="col-md-2"><div class="kpi-card"><h3 class="text-warning">${totalOTH.toFixed(1)}</h3><small>OT Hours</small></div></div>
+        <div class="col-md-2"><div class="kpi-card"><h3 class="text-danger">${pendingOT.length}</h3><small>Pending OT</small></div></div>
+        <div class="col-md-2"><div class="kpi-card"><h3 class="text-secondary">${pendingLv.length}</h3><small>Pending Leaves</small></div></div>
+    `;
+
+    // Update badges
+    if(pendingOT.length){document.getElementById('otBadge').style.display='';document.getElementById('otBadge').textContent=pendingOT.length;}
+    if(pendingLv.length){document.getElementById('leaveBadge').style.display='';document.getElementById('leaveBadge').textContent=pendingLv.length;}
+
+    // Chart 1: Attendance (Present/Absent today)
+    destroyChart('attendance');
+    chartInstances['attendance'] = new Chart(document.getElementById('chartAttendance'), {
+        type:'doughnut', data:{labels:['Active','Inactive'],datasets:[{data:[activeCount,totalEmps-activeCount],backgroundColor:['#4caf50','#e0e0e0']}]},
+        options:{responsive:true,plugins:{title:{display:true,text:'Today Attendance'}}}
+    });
+
+    // Chart 2: Hours by Department
+    destroyChart('deptHours');
+    const deptMap = {};
+    stats.forEach(s => { const d = s.department || 'N/A'; if(!deptMap[d]) deptMap[d] = 0; deptMap[d] += toHours(s.total_hours); });
+    chartInstances['deptHours'] = new Chart(document.getElementById('chartDeptHours'), {
+        type:'bar', data:{labels:Object.keys(deptMap),datasets:[{label:'Hours',data:Object.values(deptMap),backgroundColor:'#42a5f5'}]},
+        options:{responsive:true,plugins:{title:{display:true,text:'Hours by Department'}}}
+    });
+
+    // Chart 3: Leave Types
+    destroyChart('leaveTypes');
+    const allLeaves = (await api('/api/leave-requests?')).leave_requests || [];
+    const lvCounts = {Annual:0,Sick:0,Casual:0};
+    allLeaves.forEach(l => { if(l.leave_category==='annual')lvCounts.Annual++;else if(l.leave_category==='sick')lvCounts.Sick++;else lvCounts.Casual++; });
+    chartInstances['leaveTypes'] = new Chart(document.getElementById('chartLeaveTypes'), {
+        type:'pie', data:{labels:Object.keys(lvCounts),datasets:[{data:Object.values(lvCounts),backgroundColor:['#42a5f5','#ffa726','#66bb6a']}]},
+        options:{responsive:true,plugins:{title:{display:true,text:'Leave Requests by Type'}}}
+    });
+
+    // Chart 4: Monthly Hours (Regular vs OT)
+    destroyChart('monthlyHours');
+    const names = stats.map(s => s.name);
+    const regH = stats.map(s => toHours(s.regular_hours));
+    const otH = stats.map(s => toHours(s.overtime_hours));
+    chartInstances['monthlyHours'] = new Chart(document.getElementById('chartMonthlyHours'), {
+        type:'bar', data:{labels:names,datasets:[{label:'Regular',data:regH,backgroundColor:'#42a5f5'},{label:'OT',data:otH,backgroundColor:'#ffa726'}]},
+        options:{responsive:true,scales:{x:{stacked:true},y:{stacked:true}},plugins:{title:{display:true,text:`Monthly Hours (${month}/${year})`}}}
+    });
+
+    // Chart 5: OT by Employee
+    destroyChart('otByEmp');
+    const otEmployees = stats.filter(s => toHours(s.overtime_hours) > 0).sort((a,b) => toHours(b.overtime_hours) - toHours(a.overtime_hours));
+    chartInstances['otByEmp'] = new Chart(document.getElementById('chartOTByEmp'), {
+        type:'horizontalBar' in Chart.defaults ? 'horizontalBar' : 'bar',
+        data:{labels:otEmployees.map(s=>s.name),datasets:[{label:'OT Hours',data:otEmployees.map(s=>toHours(s.overtime_hours)),backgroundColor:otEmployees.map(s=>toHours(s.overtime_hours)>50?'#e53935':'#ffa726')}]},
+        options:{responsive:true,indexAxis:'y',plugins:{title:{display:true,text:'Overtime by Employee'}}}
+    });
+
+    // OT Alert
+    const over50 = stats.filter(s => toHours(s.overtime_hours) > 50);
+    if (over50.length) {
+        document.getElementById('dashOTAlert').style.display = 'block';
+        document.getElementById('dashOTAlert').innerHTML = '<strong>Warning!</strong> Employees exceeding 50 OT hours: ' + over50.map(s => `<strong>${s.name}</strong> (${s.overtime_hours})`).join(', ');
+    } else { document.getElementById('dashOTAlert').style.display = 'none'; }
+
+    // Today Stats Table
+    let thtml = '<table class="table table-sm table-bordered"><thead><tr><th>Employee</th><th>Dept</th><th>Regular</th><th>OT</th><th>Total</th><th>Status</th></tr></thead><tbody>';
+    activeNow.forEach(e => {
+        thtml += `<tr class="${e.active_now?'table-success':''}"><td>${e.name}</td><td>${e.department||'-'}</td><td>${e.regular_hours}</td><td>${e.overtime_hours}</td><td><strong>${e.total_hours}</strong></td><td>${e.active_now?'<span class="badge bg-success">Active</span>':''}</td></tr>`;
+    });
+    thtml += '</tbody></table>';
+    document.getElementById('todayBox').innerHTML = thtml;
+
+    // Recent Activity
+    const recentSessions = (await api('/api/timesheet/sessions?limit=10')).sessions || [];
+    let rhtml = '<table class="table table-sm"><thead><tr><th>Employee</th><th>Type</th><th>Project</th><th>Time</th></tr></thead><tbody>';
+    recentSessions.slice(0,10).forEach(s => {
+        rhtml += `<tr><td>${s.employee_name||'-'}</td><td>${s.hour_type}</td><td>${s.project_name||'-'}</td><td>${s.total_time||'Running'}</td></tr>`;
+    });
+    rhtml += '</tbody></table>';
+    document.getElementById('recentActivity').innerHTML = rhtml;
+}
+
+// ═══════════════════════════════════════
+// EMPLOYEES
+// ═══════════════════════════════════════
+async function loadEmployees() {
+    const data = await api('/api/admin/employees');
+    allEmployees = data.employees || data || [];
+    let html = '';
+    for (const e of allEmployees) {
+        let mgrs = '-';
+        try { const md = await api(`/api/employees/${e.id}/managers`); mgrs = (md.managers||[]).map(m=>m.name).join(', ')||'-'; } catch(ex){}
+        const role = e.role || (e.is_admin ? 'admin' : 'employee');
+        html += `<tr>
+            <td>${e.id}</td><td>${e.user_id}</td><td>${e.name}</td><td>${e.email ?? ''}</td>
+            <td><span class="badge bg-${role==='admin'?'danger':role==='hr'?'info':role==='planning'?'warning':role==='manager'?'primary':'secondary'}">${roleLabel(role)}</span></td>
+            <td>${e.department||'-'}</td><td>${e.position||'-'}</td><td style="font-size:11px">${mgrs}</td>
+            <td style="font-size:11px">A:${e.annual_leave_balance||30} S:${e.sick_leave_balance||15} C:${e.casual_leave_balance||7}</td>
+            <td>${e.overtime_limit||'Unlimited'}</td>
+            <td><button class="btn btn-info btn-sm" onclick="openProfile(${e.id})" title="Profile"><i class="bi bi-person-circle"></i></button>
+            <button class="btn btn-warning btn-sm" onclick="editEmp(${e.id})" title="Edit"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-danger btn-sm" onclick="delEmp(${e.id})" title="Delete"><i class="bi bi-trash"></i></button></td>
+        </tr>`;
+    }
+    document.getElementById('empBody').innerHTML = html;
+    fillEmpSelects();
+}
+
+function fillEmpSelects() {
+    const selects = ['empManagers','tkTo','rtEmp','fpEmp','fEmp','brkEmp','alEmp','rptEmp','admLvEmp','auditEmp','feedDept'];
+    selects.forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const val = sel.value;
+        if (['fEmp','fpEmp','brkEmp','alEmp','rptEmp'].includes(id)) {
+            sel.innerHTML = '<option value="">All Employees</option>' + allEmployees.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+        } else if (id === 'empManagers') {
+            sel.innerHTML = allEmployees.filter(e => e.role==='manager'||e.role==='admin'||e.is_admin).map(e => `<option value="${e.id}">${e.name} (${roleLabel(e.role||'employee')})</option>`).join('');
+        } else {
+            sel.innerHTML = allEmployees.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+        }
+        if (val) sel.value = val;
+    });
+}
+
+function openEmpModal(emp=null) {
+    document.getElementById('empEditId').value = emp ? emp.id : '';
+    document.getElementById('empUserId').value = emp ? emp.user_id : '';
+    document.getElementById('empName').value = emp ? emp.name : '';
+    document.getElementById('empPass').value = '';
+    document.getElementById('empEmail').value = emp ? (emp.email||'') : '';
+    document.getElementById('empRole').value = emp ? (emp.role||'employee') : 'employee';
+    document.getElementById('empDept').value = emp ? (emp.department||'') : '';
+    document.getElementById('empPos').value = emp ? (emp.position||'') : '';
+    document.getElementById('empOTLimit').value = emp ? (emp.overtime_limit||'') : '';
+    document.getElementById('empAL').value = emp ? (emp.annual_leave_balance||30) : 30;
+    document.getElementById('empSL').value = emp ? (emp.sick_leave_balance||15) : 15;
+    document.getElementById('empCL').value = emp ? (emp.casual_leave_balance||7) : 7;
+    document.getElementById('empModalTitle').textContent = emp ? 'Edit Employee' : 'Add Employee';
+    new bootstrap.Modal(document.getElementById('empModal')).show();
+}
+
+async function editEmp(id) { const emp = allEmployees.find(e => e.id === id); if (emp) openEmpModal(emp); }
+
+async function saveEmp() {
+    const id = document.getElementById('empEditId').value;
+    const body = { user_id: document.getElementById('empUserId').value, name: document.getElementById('empName').value, password: document.getElementById('empPass').value, email: document.getElementById('empEmail').value, role: document.getElementById('empRole').value, department: document.getElementById('empDept').value, position: document.getElementById('empPos').value, is_admin: document.getElementById('empRole').value === 'admin' };
+    if (id) {
+        await api(`/api/admin/employees/${id}`, 'PUT', body);
+        await api(`/api/employees/${id}/update-advanced`, 'PUT', { email: body.email, role: body.role, overtime_limit: document.getElementById('empOTLimit').value || null, annual_leave_balance: document.getElementById('empAL').value, sick_leave_balance: document.getElementById('empSL').value, casual_leave_balance: document.getElementById('empCL').value });
+        const mgrIds = Array.from(document.getElementById('empManagers').selectedOptions).map(o => parseInt(o.value));
+        await api(`/api/employees/${id}/managers`, 'POST', { manager_ids: mgrIds });
+    } else {
+        const res = await api('/api/admin/employees', 'POST', body);
+        if (res.employee_id || res.id) {
+            const newId = res.employee_id || res.id;
+            await api(`/api/employees/${newId}/update-advanced`, 'PUT', { email: body.email, role: body.role, overtime_limit: document.getElementById('empOTLimit').value || null, annual_leave_balance: document.getElementById('empAL').value, sick_leave_balance: document.getElementById('empSL').value, casual_leave_balance: document.getElementById('empCL').value });
+            const mgrIds = Array.from(document.getElementById('empManagers').selectedOptions).map(o => parseInt(o.value));
+            if (mgrIds.length) await api(`/api/employees/${newId}/managers`, 'POST', { manager_ids: mgrIds });
+        }
+    }
+    bootstrap.Modal.getInstance(document.getElementById('empModal')).hide();
+    loadEmployees();
+}
+
+async function delEmp(id) { if (confirm('Delete this employee?')) { await api(`/api/admin/employees/${id}`, 'DELETE'); loadEmployees(); } }
+
+// ═══════════════════════════════════════
+// PROJECTS
+// ═══════════════════════════════════════
+async function loadProjects() {
+    const data = await api('/api/admin/projects');
+    allProjects = data.projects || data || [];
+    let html = '';
+    for (const p of allProjects) {
+        html += `<tr><td>${p.id}</td><td>${p.project_number||'-'}</td><td>${p.project_name}</td>
+        <td><button class="btn btn-info btn-sm" onclick="manageJobs(${p.id},'${p.project_name}')"><i class="bi bi-list-ol"></i> Jobs</button>
+        <button class="btn btn-warning btn-sm" onclick="editProj(${p.id})"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-danger btn-sm" onclick="delProj(${p.id})"><i class="bi bi-trash"></i></button></td></tr>`;
+    }
+    document.getElementById('projBody').innerHTML = html;
+    
+    // تعبئة فلتر المشاريع (الاسم)
+    if (document.getElementById('fProj')) {
+        document.getElementById('fProj').innerHTML = '<option value="">All Projects</option>' + allProjects.map(p => `<option value="${p.id}">${p.project_name}</option>`).join('');
+    }
+    // تعبئة فلتر المشاريع (الرقم)
+    if (document.getElementById('fProjNo')) {
+        document.getElementById('fProjNo').innerHTML = '<option value="">All Proj No</option>' + allProjects.map(p => `<option value="${p.id}">${p.project_number}</option>`).join('');
+    }
+    // تعبئة فلتر المشاريع في تبويب المهام
+    if (document.getElementById('tkProj')) {
+        document.getElementById('tkProj').innerHTML = '<option value="">All Projects</option>' + allProjects.map(p => `<option value="${p.id}">${p.project_name}</option>`).join('');
+    }
+    
+    // تحميل جميع أرقام الوظائف لفلتر Job No
+    loadAllJobsForFilter();
+    
+    // Fill departments
+    try {
+        const dd = await api('/api/departments');
+        ['fDept','alDept','rptDept'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (sel) sel.innerHTML = '<option value="">All Departments</option>' + (dd.departments||[]).map(d => `<option value="${d}">${d}</option>`).join('');
+        });
+    } catch(e) {}
+}
+
+async function loadAllJobsForFilter() {
+    const data = await api('/api/admin/projects');
+    const projs = data.projects || data || [];
+    let jhtml = '<option value="">All Job No</option>';
+    const jobNos = new Set();
+    
+    // استخدام مصفوفة من الوعود (Promises) لتسريع العملية
+    const promises = projs.map(p => api(`/api/admin/projects/${p.id}/jobs`).catch(() => ({jobs:[]})));
+    const results = await Promise.all(promises);
+    
+    results.forEach(jd => {
+        const jobs = jd.jobs || jd || [];
+        jobs.forEach(j => {
+            if (j.job_number && !jobNos.has(j.job_number)) {
+                jobNos.add(j.job_number);
+                jhtml += `<option value="${j.job_number}">${j.job_number}</option>`;
+            }
+        });
+    });
+    
+    const sel = document.getElementById('fJobNo');
+    if (sel) sel.innerHTML = jhtml;
+}
+
+function updateProjNoFilter() {
+    const pId = document.getElementById('fProj').value;
+    if (pId && document.getElementById('fProjNo')) {
+        document.getElementById('fProjNo').value = pId;
+        // تحديث قائمة Job No لهذا المشروع فقط
+        loadJobsForFilter(pId);
+    } else {
+        // إذا لم يتم اختيار مشروع، نظهر جميع الوظائف
+        loadAllJobsForFilter();
+    }
+}
+
+function updateProjFilter() {
+    const pId = document.getElementById('fProjNo').value;
+    if (pId && document.getElementById('fProj')) {
+        document.getElementById('fProj').value = pId;
+        // تحديث قائمة Job No لهذا المشروع فقط
+        loadJobsForFilter(pId);
+    } else {
+        loadAllJobsForFilter();
+    }
+}
+
+async function loadJobsForFilter(pId) {
+    if (!pId) { loadAllJobsForFilter(); return; }
+    const jd = await api(`/api/admin/projects/${pId}/jobs`);
+    const jobs = jd.jobs || jd || [];
+    let jhtml = '<option value="">All Job No</option>';
+    jobs.forEach(j => {
+        if (j.job_number) jhtml += `<option value="${j.job_number}">${j.job_number}</option>`;
+    });
+    if (document.getElementById('fJobNo')) document.getElementById('fJobNo').innerHTML = jhtml;
+}
+
+function openProjModal(p=null) {
+    document.getElementById('projEditId').value = p ? p.id : '';
+    document.getElementById('projNo').value = p ? (p.project_number||'') : '';
+    document.getElementById('projName').value = p ? p.project_name : '';
+    document.getElementById('projModalTitle').textContent = p ? 'Edit Project' : 'Add Project';
+    new bootstrap.Modal(document.getElementById('projModal')).show();
+}
+function editProj(id) { const p = allProjects.find(x=>x.id===id); if(p) openProjModal(p); }
+async function saveProj() {
+    const id = document.getElementById('projEditId').value;
+    const pNo = document.getElementById('projNo').value;
+    const pName = document.getElementById('projName').value;
+    
+    if (!pName) { alert('Project Name is required'); return; }
+    
+    const body = { project_number: pNo, project_name: pName };
+    try {
+        if (id) {
+            await api(`/api/admin/projects/${id}`, 'PUT', body);
+        } else {
+            await api('/api/admin/projects', 'POST', body);
+        }
+        const modalEl = document.getElementById('projModal');
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.hide();
+        loadProjects();
+    } catch (e) {
+        alert('Error saving project: ' + e.message);
+    }
+}
+async function delProj(id) { if(confirm('Delete?')) { await api(`/api/admin/projects/${id}`, 'DELETE'); loadProjects(); } }
+
+async function manageJobs(pid, pname) {
+    document.getElementById('jobProjId').value = pid;
+    document.getElementById('jobsTitle').textContent = `Job Numbers - ${pname}`;
+    document.getElementById('jobsSection').style.display = 'block';
+    const data = await api(`/api/admin/projects/${pid}/jobs`);
+    const jobs = data.jobs || [];
+    document.getElementById('jobsList').innerHTML = jobs.length ? '<table class="table table-sm table-bordered"><thead><tr><th>Job No</th><th>Description</th><th>Delete</th></tr></thead><tbody>' +
+        jobs.map(j => `<tr><td>${j.job_number}</td><td>${j.description||'-'}</td><td><button class="btn btn-danger btn-sm" onclick="delJob(${j.id})"><i class="bi bi-trash"></i></button></td></tr>`).join('') +
+        '</tbody></table>' : '<p class="text-muted">No Job Numbers</p>';
+}
+async function addJob() {
+    const pid = document.getElementById('jobProjId').value;
+    await api(`/api/admin/projects/${pid}/jobs`, 'POST', { job_number: document.getElementById('newJobNo').value, description: document.getElementById('newJobDesc').value });
+    document.getElementById('newJobNo').value = '';document.getElementById('newJobDesc').value = '';
+    manageJobs(pid, document.getElementById('jobsTitle').textContent.split(' - ')[1]);
+    // تحديث قائمة الفلاتر المنسدلة
+    loadAllJobsForFilter();
+}
+async function delJob(jid) { if(confirm('Delete?')) { await api(`/api/admin/jobs/${jid}`, 'DELETE'); const pid = document.getElementById('jobProjId').value; manageJobs(pid, document.getElementById('jobsTitle').textContent.split(' - ')[1]); } }
+
+// ═══════════════════════════════════════
+// ATTENDANCE LOG (Comprehensive)
+// ═══════════════════════════════════════
+async function loadAttendanceLog() {
+    let url = '/api/admin/attendance-log?';
+    const emp = document.getElementById('alEmp').value;
+    const dept = document.getElementById('alDept').value;
+    const from = document.getElementById('alFrom').value;
+    const to = document.getElementById('alTo').value;
+    if (emp) url += `employee_id=${emp}&`;
+    if (dept) url += `department=${encodeURIComponent(dept)}&`;
+    if (from) url += `start_date=${from}&`;
+    if (to) url += `end_date=${to}&`;
+    const data = await api(url);
+    const records = data.records || [];
+    let html = '';
+    records.forEach(r => {
+        const dayTypeClass = r.day_type === 'Leave' ? 'table-info' : r.day_type === 'Absent' ? 'table-danger' : r.day_type === 'No Fingerprint' ? 'table-warning' : '';
+        const otStatus = r.ot_approval_status === 'approved' ? '<span class="badge bg-success">Approved</span>' : r.ot_approval_status === 'rejected' ? '<span class="badge bg-danger">Rejected</span>' : r.ot_approval_status === 'pending' ? '<span class="badge bg-warning">Pending</span>' : '-';
+        html += `<tr class="${dayTypeClass}">
+            <td>${r.user_id||r.employee_id}</td><td>${r.employee_name}</td><td>${r.date}</td>
+            <td>${r.check_in||'-'}</td><td>${r.check_out||'-'}</td>
+            <td><strong>${r.total_time||'-'}</strong></td>
+            <td>${r.project_time||'-'}</td><td>${r.break_time||'-'}</td>
+            <td>${r.day_type||'Present'}</td>
+            <td>${r.overtime_hours||'-'}</td><td>${otStatus}</td>
+        </tr>`;
+    });
+    document.getElementById('alBody').innerHTML = html || '<tr><td colspan="11" class="text-center">No data</td></tr>';
+}
+
+function exportAttendanceExcel() {
+    let url = '/api/admin/attendance-log/export?';
+    const emp = document.getElementById('alEmp').value;
+    const dept = document.getElementById('alDept').value;
+    const from = document.getElementById('alFrom').value;
+    const to = document.getElementById('alTo').value;
+    if (emp) url += `employee_id=${emp}&`;
+    if (dept) url += `department=${encodeURIComponent(dept)}&`;
+    if (from) url += `start_date=${from}&`;
+    if (to) url += `end_date=${to}&`;
+    window.location.href = url;
+}
+
+// ═══════════════════════════════════════
+// TIMESHEET
+// ═══════════════════════════════════════
+async function loadTimesheet() {
+    const pId = document.getElementById('fProj').value;
+    let pNo = '';
+    if (pId) {
+        const p = allProjects.find(x => x.id == pId);
+        if (p) pNo = p.project_number;
+    } else {
+        const pNoSel = document.getElementById('fProjNo').value;
+        if (pNoSel) {
+            const p = allProjects.find(x => x.id == pNoSel);
+            if (p) pNo = p.project_number;
+        }
+    }
+    
+    const eId = document.getElementById('fEmp').value;
+    const jNo = document.getElementById('fJobNo').value;
+    const fType = document.getElementById('fType').value;
+    const fDept = document.getElementById('fDept')?.value || '';
+    const fFrom = document.getElementById('fFrom').value;
+    const fTo = document.getElementById('fTo').value;
+    
+    const params = new URLSearchParams();
+
+if (pId) params.append("project_id", pId);
+if (pNo) params.append("project_number", pNo);
+if (eId) params.append("employee_id", eId);
+if (jNo) params.append("job_no", jNo);
+if (fType) params.append("hour_type", fType);
+if (fDept) params.append("department", fDept);
+if (fFrom) params.append("start_date", fFrom);
+if (fTo) params.append("end_date", fTo);
+
+let url = "/api/timesheet/sessions?" + params.toString();
+    
+    try {
+        const data = await api(url);
+        const sessions = data.sessions || [];
+        let html = '';
+        sessions.forEach(s => {
+            const isOT = s.hour_type === 'OVERTIME';
+            html += `<tr class="${isOT?'ot-row':''}">
+                <td>${s.id}</td><td>${s.date||'-'}</td><td>${s.employee_user_id||'-'}</td><td>${s.employee_name||'-'}</td>
+                <td>${s.project_number||'-'}</td><td>${s.project_name||'-'}</td><td>${s.job_no||'-'}</td>
+                <td>${s.task_name||'-'}</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${s.description||'-'}</td>
+                <td>${isOT?'<span class="badge bg-warning text-dark">OT</span>':s.hour_type||'-'}</td>
+                <td style="font-size:11px">${s.start_time||'-'}</td><td style="font-size:11px">${s.end_time||'-'}</td>
+                <td><strong>${s.total_time||'-'}</strong></td>
+                <td><button class="btn btn-outline-primary btn-sm" onclick="editSess(${s.id})"><i class="bi bi-pencil"></i></button></td>
+            </tr>`;
+        });
+        document.getElementById('tsBody').innerHTML = html || '<tr><td colspan="14" class="text-center">No data</td></tr>';
+    } catch (e) {
+        console.error('Error loading timesheet:', e);
+        document.getElementById('tsBody').innerHTML = '<tr><td colspan="14" class="text-center text-danger">Error loading data</td></tr>';
+    }
+}
+
+function clearTsFilters() { ['fProj','fProjNo','fEmp','fJobNo','fType','fDept','fFrom','fTo'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; }); loadTimesheet(); }
+
+async function editSess(id) {
+
+    const data = await api(`/api/admin/sessions/${id}`);
+
+    // ✅ خزن ID مهم جدا
+    document.getElementById('esId').value = id;
+
+    // ✅ استخدم data مش s
+    document.getElementById('esType').value = data.hour_type || 'WORK ORDER';
+    document.getElementById('esJob').value = data.job_no || '';
+    document.getElementById('esTask').value = data.task_name || '';
+    document.getElementById('esDesc').value = data.description || '';
+
+    // ✅ تنسيق الوقت
+    if (data.start_time) {
+        document.getElementById('esStart').value = data.start_time.slice(0,16);
+    } else {
+        document.getElementById('esStart').value = '';
+    }
+
+    if (data.end_time) {
+        document.getElementById('esEnd').value = data.end_time.slice(0,16);
+    } else {
+        document.getElementById('esEnd').value = '';
+    }
+
+    // ✅ افتح المودال
+    new bootstrap.Modal(document.getElementById('editSessModal')).show();
+}
+
+async function saveSessEdit() {
+    const id = document.getElementById('esId').value;
+    const startVal = document.getElementById('esStart').value;
+    const endVal = document.getElementById('esEnd').value;
+    // ✅ VALIDATION
+    if (startVal && endVal && new Date(endVal) < new Date(startVal)) {
+        alert("End time must be after start time ❌");
+        return;
+    }
+    const body = { 
+        hour_type: document.getElementById('esType').value, 
+        job_no: document.getElementById('esJob').value, 
+        task_name: document.getElementById('esTask').value, 
+        description: document.getElementById('esDesc').value 
+    };
+    
+    if (startVal) {
+    body.start_time = new Date(startVal).toISOString();
+}
+
+if (endVal) {
+    body.end_time = new Date(endVal).toISOString();
+}
+    
+    try {
+        await api(`/api/admin/sessions/${id}`, 'PUT', body);
+        const modalEl = document.getElementById('editSessModal');
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.hide();
+        loadTimesheet();
+    } catch (e) {
+        alert('Error saving session: ' + e.message);
+    }
+}
+function calcDuration() {
+    const s = document.getElementById('esStart').value;
+    const e = document.getElementById('esEnd').value;
+
+    if (s && e) {
+        const diff = (new Date(e) - new Date(s)) / 3600000;
+        console.log("Hours:", diff.toFixed(2));
+    }
+}
+
+document.getElementById('esStart').addEventListener('change', calcDuration);
+document.getElementById('esEnd').addEventListener('change', calcDuration);
+
+function exportExcel() {
+    let url = '/api/timesheet/export/excel?';
+    ['fProj','fProjNo','fEmp','fJobNo','fType','fDept','fFrom','fTo'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.value) url += `${id.replace('f','').toLowerCase()}=${encodeURIComponent(el.value)}&`;
+    });
+    window.location.href = url;
+}
+
+// ═══════════════════════════════════════
+// OT REQUESTS
+// ═══════════════════════════════════════
+async function loadOTRequests() {
+    const status = document.getElementById('otFStatus').value;
+    let url = `/api/overtime-requests?`;
+    if (status) url += `status=${status}&`;
+    const data = await api(url);
+    const reqs = data.overtime_requests || [];
+    document.getElementById('otBadge').style.display = reqs.filter(r=>r.status==='pending').length ? '' : 'none';
+    document.getElementById('otBadge').textContent = reqs.filter(r=>r.status==='pending').length;
+    let html = '';
+    reqs.forEach(r => {
+        const statusBadge = r.status==='pending'?'<span class="badge bg-warning">Pending</span>':r.status==='approved'?'<span class="badge bg-success">Approved</span>':'<span class="badge bg-danger">Rejected</span>';
+        let sessHtml = '';
+        if (r.sessions && r.sessions.length) {
+            sessHtml = '<table class="table table-sm mb-0"><tr><th>Project</th><th>Job</th><th>Task</th><th>Hours</th></tr>' +
+                r.sessions.map(s => `<tr><td>${s.project_name}</td><td>${s.job_no}</td><td>${s.task_name}</td><td>${s.hours}</td></tr>`).join('') + '</table>';
+        }
+        html += `<div class="stat-card mb-2">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div><strong>${r.employee_name}</strong> - ${r.request_date} ${statusBadge}</div>
+                <div>Total OT: <strong>${r.total_overtime_hours}</strong></div>
+            </div>
+            <div class="mb-2"><small>Reason: ${r.reason||'-'}</small></div>
+            ${sessHtml}
+            <div class="mt-2 d-flex gap-2">
+                <button class="btn btn-success btn-sm ${r.status==='approved'?'disabled':''}" onclick="approveOT(${r.id})"><i class="bi bi-check-lg"></i> Approve</button>
+                <button class="btn btn-danger btn-sm ${r.status==='rejected'?'disabled':''}" onclick="rejectOT(${r.id})"><i class="bi bi-x-lg"></i> Reject</button>
+            </div>
+            ${r.approved_by_name!=='-'?`<small class="text-muted">By: ${r.approved_by_name}</small>`:''}
+            ${r.rejection_note?`<small class="text-danger d-block">Rejection: ${r.rejection_note}</small>`:''}
+        </div>`;
+    });
+    document.getElementById('otContainer').innerHTML = html || '<p class="text-muted">No requests</p>';
+}
+async function approveOT(id) { await api(`/api/overtime-requests/${id}/approve`, 'POST'); loadOTRequests(); }
+async function rejectOT(id) { const note = prompt('Rejection reason (optional):'); await api(`/api/overtime-requests/${id}/reject`, 'POST', {note: note||''}); loadOTRequests(); }
+
+// ═══════════════════════════════════════
+// LEAVES
+// ═══════════════════════════════════════
+async function loadLeaves() {
+
+    const status = document.getElementById('lvFStatus').value;
+    const cat = document.getElementById('lvFCat').value;
+
+    // ✅ أفضل طريقة لبناء URL
+    let params = new URLSearchParams();
+
+    if (status) params.append("status", status);
+    if (cat && cat !== "all") params.append("category", cat);
+
+    let url = "/api/admin/leave-requests?" + params.toString();
+
+    console.log("URL:", url);
+
+    const data = await api(url);
+    const leaves = data.leave_requests || [];
+
+    // ✅ Badge
+    const pendingCount = leaves.filter(l => l.status === 'pending').length;
+
+    document.getElementById('leaveBadge').style.display =
+        pendingCount ? '' : 'none';
+
+    document.getElementById('leaveBadge').textContent = pendingCount;
+
+    const catNames = {
+        annual: 'Annual',
+        sick: 'Sick',
+        casual: 'Casual'
+    };
+
+    let html = '';
+
+    leaves.forEach(l => {
+
+        const statusBadge =
+            l.status === 'pending'
+                ? '<span class="badge bg-warning">Pending</span>'
+                : l.status === 'approved'
+                ? '<span class="badge bg-success">Approved</span>'
+                : '<span class="badge bg-danger">Rejected</span>';
+
+        html += `
+        <tr>
+            <td>${l.id}</td>
+            <td>${l.employee_name}</td>
+            <td>${catNames[l.leave_category] || l.leave_category}</td>
+            <td>${l.start_date}</td>
+            <td>${l.end_date}</td>
+            <td>${l.duration_days}</td>
+
+            <td>
+                ${l.is_half_day
+                    ? '<span class="badge bg-info">Half</span>'
+                    : '-'}
+            </td>
+
+            <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                ${l.reason || '-'}
+            </td>
+
+            <td class="text-center">
+                ${
+                    l.attachment_path
+                        ? `<a href="${l.attachment_path}" target="_blank" class="btn btn-sm btn-outline-info">
+                                <i class="bi bi-eye"></i>
+                           </a>`
+                        : '<span class="text-muted small">No File</span>'
+                }
+            </td>
+
+            <td>${statusBadge}</td>
+
+            <td>${l.approved_by_name || '-'}</td>
+
+            <td>
+                ${
+                    l.status === 'pending'
+                        ? `
+                        <button class="btn btn-success btn-sm" onclick="approveLv(${l.id})">
+                            ✔
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="rejectLv(${l.id})">
+                            ✖
+                        </button>
+                        `
+                        : ''
+                }
+
+                <button class="btn btn-outline-primary btn-sm" onclick="editLv(${l.id})">
+                    ✏️
+                </button>
+            </td>
+        </tr>`;
+    });
+
+    document.getElementById('lvBody').innerHTML =
+        html || `<tr><td colspan="12" class="text-center">No data</td></tr>`;
+}
+async function approveLv(id) { await api(`/api/leave-requests/${id}/approve`, 'POST'); loadLeaves(); }
+async function rejectLv(id) { const note = prompt('Rejection reason:'); await api(`/api/leave-requests/${id}/reject`, 'POST', {note:note||''}); loadLeaves(); }
+function editLv(id) { document.getElementById('eLvId').value = id; new bootstrap.Modal(document.getElementById('editLvModal')).show(); }
+async function saveLvEdit() {
+    const id = document.getElementById('eLvId').value;
+    await api(`/api/leave-requests/${id}`, 'PUT', { leave_category: document.getElementById('eLvCat').value, start_date: document.getElementById('eLvStart').value, end_date: document.getElementById('eLvEnd').value, duration_days: document.getElementById('eLvDur').value, is_half_day: document.getElementById('eLvHalf').checked, status: document.getElementById('eLvStat').value });
+    bootstrap.Modal.getInstance(document.getElementById('editLvModal')).hide();
+    loadLeaves();
+}
+async function toggleBalances() {
+    const box = document.getElementById('balancesBox');
+    if (box.style.display !== 'none') { box.style.display = 'none'; return; }
+    let html = '<table class="table table-sm table-bordered"><thead><tr><th>Employee</th><th>Annual (Total/Used/Left)</th><th>Sick</th><th>Casual</th></tr></thead><tbody>';
+    for (const e of allEmployees) {
+        try { const b = await api(`/api/leave-balance/${e.id}`);
+        html += `<tr><td>${e.name}</td><td>${b.annual.total}/${b.annual.used}/<strong>${b.annual.remaining}</strong></td><td>${b.sick.total}/${b.sick.used}/<strong>${b.sick.remaining}</strong></td><td>${b.casual.total}/${b.casual.used}/<strong>${b.casual.remaining}</strong></td></tr>`; } catch(ex) {}
+    }
+    html += '</tbody></table>';
+    box.innerHTML = html; box.style.display = 'block';
+}
+function exportLeavesExcel() { window.location.href = '/api/admin/leaves/export/excel'; }
+
+// Admin Leave Request
+function openAdminLeaveModal() { new bootstrap.Modal(document.getElementById('adminLeaveModal')).show(); }
+async function submitAdminLeave() {
+    const body = {
+        employee_id: parseInt(document.getElementById('admLvEmp').value),
+        leave_category: document.getElementById('admLvCat').value,
+        start_date: document.getElementById('admLvFrom').value,
+        end_date: document.getElementById('admLvTo').value || document.getElementById('admLvFrom').value,
+        duration_days: parseFloat(document.getElementById('admLvDur').value),
+        is_half_day: document.getElementById('admLvHalf').checked,
+        reason: document.getElementById('admLvReason').value,
+        auto_approve: true
+    };
+    const d = await api('/api/admin/leave-requests', 'POST', body);
+    if (d.error) alert(d.error);
+    else { bootstrap.Modal.getInstance(document.getElementById('adminLeaveModal')).hide(); loadLeaves(); }
+}
+
+// ═══════════════════════════════════════
+// TASKS
+// ═══════════════════════════════════════
+async function loadTasks() {
+    const data = await api('/api/tasks');
+    const tasks = data.tasks || [];
+    const priMap = {urgent:'Urgent',high:'High',medium:'Medium',low:'Low'};
+    const statMap = {new:'New',in_progress:'In Progress',completed:'Completed',cancelled:'Cancelled'};
+    let html = '';
+    tasks.forEach(t => {
+        html += `<tr><td>${t.id}</td><td>${t.title}</td><td>${t.assigned_to_name}</td><td>${t.assigned_by_name}</td>
+            <td>${t.project_name||'-'}</td><td>${t.due_date||'-'}</td>
+            <td class="priority-${t.priority}">${priMap[t.priority]||t.priority}</td>
+            <td><span class="badge bg-${t.status==='completed'?'success':t.status==='in_progress'?'primary':'secondary'}">${statMap[t.status]||t.status}</span></td>
+            <td><select class="form-select form-select-sm" style="width:120px;display:inline" onchange="updTask(${t.id},this.value)">
+                <option value="new" ${t.status==='new'?'selected':''}>New</option>
+                <option value="in_progress" ${t.status==='in_progress'?'selected':''}>In Progress</option>
+                <option value="completed" ${t.status==='completed'?'selected':''}>Completed</option>
+            </select></td></tr>`;
+    });
+    document.getElementById('taskBody').innerHTML = html || '<tr><td colspan="9" class="text-center">No tasks</td></tr>';
+}
+function openTaskModal() { new bootstrap.Modal(document.getElementById('taskModal')).show(); }
+async function saveTask() {
+    await api('/api/tasks', 'POST', { title: document.getElementById('tkTitle').value, description: document.getElementById('tkDesc').value, assigned_to: parseInt(document.getElementById('tkTo').value), project_id: document.getElementById('tkProj').value || null, due_date: document.getElementById('tkDue').value || null, priority: document.getElementById('tkPri').value });
+    bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide(); loadTasks();
+}
+async function updTask(id, status) { await api(`/api/tasks/${id}`, 'PUT', {status}); }
+
+// ═══════════════════════════════════════
+// RATINGS
+// ═══════════════════════════════════════
+async function loadRatings() {
+    const data = await api('/api/ratings');
+    const ratings = data.ratings || [];
+    let html = '';
+    ratings.forEach(r => {
+        const stars = '&#9733;'.repeat(r.rating) + '&#9734;'.repeat(5-r.rating);
+        html += `<tr><td>${r.employee_name}</td><td>${r.month}/${r.year}</td><td class="stars">${stars}</td><td>${r.rated_by_name}</td><td style="max-width:150px">${r.performance_notes||'-'}</td></tr>`;
+    });
+    document.getElementById('rateBody').innerHTML = html || '<tr><td colspan="5" class="text-center">No ratings</td></tr>';
+}
+function openRateModal() {
+    document.getElementById('rtMonth').value = new Date().getMonth() + 1;
+    document.getElementById('rtYear').value = new Date().getFullYear();
+    updStars(); new bootstrap.Modal(document.getElementById('rateModal')).show();
+}
+function updStars() { const v = parseInt(document.getElementById('rtVal').value); document.getElementById('rtStars').innerHTML = '&#9733;'.repeat(v) + '&#9734;'.repeat(5-v); }
+async function saveRate() {
+    await api('/api/ratings', 'POST', { employee_id: parseInt(document.getElementById('rtEmp').value), month: parseInt(document.getElementById('rtMonth').value), year: parseInt(document.getElementById('rtYear').value), rating: parseInt(document.getElementById('rtVal').value), performance_notes: document.getElementById('rtNotes').value, strengths: document.getElementById('rtStr').value, improvements: document.getElementById('rtImp').value });
+    bootstrap.Modal.getInstance(document.getElementById('rateModal')).hide(); loadRatings();
+}
+
+// ═══════════════════════════════════════
+// FINGERPRINT
+// ═══════════════════════════════════════
+async function loadFP() {
+    const emp = document.getElementById('fpEmp').value;
+    const from = document.getElementById('fpFrom').value;
+    const to = document.getElementById('fpTo').value;
+    let url = '/api/fingerprint/attendance?';
+    if (emp) url += `employee_id=${emp}&`;
+    if (from) url += `from_date=${from}&`;
+    if (to) url += `to_date=${to}&`;
+    const data = await api(url);
+    if (data.error) { document.getElementById('fpMsg').innerHTML = `<div class="alert alert-warning">${data.error}</div>`; }
+    else { document.getElementById('fpMsg').innerHTML = ''; }
+    const recs = data.records || [];
+    let html = '';
+    const punchColors = {'Check In':'success','Check Out':'danger','Break Out':'warning','Break In':'info','OT In':'primary','OT Out':'secondary'};
+    recs.forEach(r => {
+        const pLabel = r.punch_label || r.status || '-';
+        html += `<tr><td>${r.user_id}</td><td>${r.date}</td><td>${r.time}</td><td><span class="badge bg-${punchColors[pLabel]||'secondary'}">${pLabel}</span></td></tr>`;
+    });
+    document.getElementById('fpBody').innerHTML = html || '<tr><td colspan="4" class="text-center">No data</td></tr>';
+}
+async function syncFP() {
+    const btn = event.target.closest('button');
+    btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Syncing...';
+    const data = await api('/api/fingerprint/sync', 'POST', {});
+    btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Sync';
+    if (data.success) { document.getElementById('fpMsg').innerHTML = `<div class="alert alert-success">${data.message} (Total: ${data.total_records})</div>`; loadFP(); }
+    else { document.getElementById('fpMsg').innerHTML = `<div class="alert alert-danger">${data.error || 'Connection failed'}</div>`; }
+}
+
+// ═══════════════════════════════════════
+// BREAK LOG
+// ═══════════════════════════════════════
+async function loadBreaks() {
+    const emp = document.getElementById('brkEmp').value;
+    const from = document.getElementById('brkFrom').value;
+    const to = document.getElementById('brkTo').value;
+    let url = '/api/timesheet/breaks?';
+    if (emp) url += `employee_id=${emp}&`;
+    if (from) url += `start_date=${from}&`;
+    if (to) url += `end_date=${to}&`;
+    const data = await api(url);
+    const breaks = data.breaks || [];
+    const summary = document.getElementById('brkSummary');
+    if (data.total_minutes !== undefined) {
+        summary.classList.remove('d-none');
+        summary.innerHTML = `<i class="bi bi-cup-hot"></i> Total break time: <strong>${data.total_hours}</strong> (${data.total_minutes} min)`;
+    }
+    let html = '';
+    breaks.forEach(b => {
+        const statusBadge = b.is_active ? '<span class="badge bg-warning">Active</span>' : '<span class="badge bg-success">Ended</span>';
+        html += `<tr><td>${b.id}</td><td>${b.employee_name}</td><td>${b.start_time}</td><td>${b.end_time}</td><td>${b.duration_minutes}</td><td>${b.reason||'-'}</td><td>${statusBadge}</td>
+            <td><button class="btn btn-outline-primary btn-sm" onclick="editBrk(${b.id},'${b.start_time}','${b.end_time}','${b.reason||''}')"><i class="bi bi-pencil"></i></button></td></tr>`;
+    });
+    document.getElementById('brkBody').innerHTML = html || '<tr><td colspan="8" class="text-center">No data</td></tr>';
+}
+function editBrk(id, start, end, reason) {
+    document.getElementById('brkEditId').value = id;
+    const toLocal = (s) => { if (!s || s==='Active') return ''; try { return new Date(s).toISOString().slice(0,16); } catch(e) { return ''; } };
+    document.getElementById('brkEditStart').value = toLocal(start);
+    document.getElementById('brkEditEnd').value = toLocal(end);
+    document.getElementById('brkEditReason').value = reason;
+    new bootstrap.Modal(document.getElementById('editBrkModal')).show();
+}
+async function saveBrkEdit() {
+    const id = document.getElementById('brkEditId').value;
+    await api(`/api/timesheet/breaks/${id}`, 'PUT', { start_time: document.getElementById('brkEditStart').value, end_time: document.getElementById('brkEditEnd').value, reason: document.getElementById('brkEditReason').value });
+    bootstrap.Modal.getInstance(document.getElementById('editBrkModal')).hide(); loadBreaks();
+}
+
+// ═══════════════════════════════════════
+async function uploadLeaves() {
+    const fileInput = document.getElementById('leaveFile');
+
+    if (!fileInput.files.length) {
+        alert("اختار ملف الأول");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+
+    const res = await fetch("/api/admin/upload-leaves", {
+        method: "POST",
+        body: formData
+    });
+
+    const data = await res.json();
+
+    alert(data.message || "تم");
+}
+
+// ✅ الكود الصح
+async function checkAdmin() {
+    try {
+        const res = await fetch("/api/current_user");
+        const data = await res.json();
+
+        console.log("USER FULL:", data);
+
+        const user = data.user;  // ✅ دي أهم نقطة
+
+        if (user?.is_admin === true || user?.role === "admin") {
+            document.getElementById("uploadBox").style.display = "flex";
+        }
+
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// ✅ استدعاء صح
+document.addEventListener("DOMContentLoaded", function () {
+    checkAdmin();
+});
+
+
+// REPORTS
+// ═══════════════════════════════════════
+let rptChartObj = null;
+
+function initReportFilters() {
+    const mSel = document.getElementById('rptMonth');
+    const ySel = document.getElementById('rptYear');
+    const now = new Date();
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    mSel.innerHTML = months.map((m,i) => `<option value="${i+1}" ${i+1===now.getMonth()+1?'selected':''}>${m}</option>`).join('');
+    ySel.innerHTML = '';
+    for (let y = now.getFullYear(); y >= now.getFullYear()-3; y--) ySel.innerHTML += `<option value="${y}">${y}</option>`;
+}
+
+function showReport(type) {
+    currentReport = type;
+    document.getElementById('reportFilter').classList.remove('d-none');
+    document.getElementById('reportChart').classList.remove('d-none');
+    document.getElementById('reportTable').classList.remove('d-none');
+    // Hide report cards
+    document.querySelectorAll('#tab-reports > .row').forEach(r => r.style.display = 'none');
+    generateReport();
+}
+
+function hideReport() {
+    document.getElementById('reportFilter').classList.add('d-none');
+    document.getElementById('reportChart').classList.add('d-none');
+    document.getElementById('reportTable').classList.add('d-none');
+    document.querySelectorAll('#tab-reports > .row').forEach(r => r.style.display = '');
+    currentReport = '';
+}
+
+async function generateReport() {
+    const month = document.getElementById('rptMonth').value;
+    const year = document.getElementById('rptYear').value;
+    const emp = document.getElementById('rptEmp').value;
+    const dept = document.getElementById('rptDept').value;
+    const from = document.getElementById('rptFrom').value;
+    const to = document.getElementById('rptTo').value;
+
+    if (currentReport === 'monthly-summary') await reportMonthlySummary(month, year, dept);
+    else if (currentReport === 'project-hours') await reportProjectHours(from, to);
+    else if (currentReport === 'overtime-report') await reportOvertime(month, year);
+    else if (currentReport === 'leave-report') await reportLeaves();
+    else if (currentReport === 'attendance-report') await reportAttendance(from, to, dept);
+    else if (currentReport === 'department-report') await reportDepartment(month, year);
+    else if (currentReport === 'employee-detail') await reportEmployeeDetail(emp, month, year);
+    else if (currentReport === 'project-comparison') await reportProjectComparison(from, to);
+    else if (currentReport === 'break-report') await reportBreaks(from, to);
+    else if (currentReport === 'not-started-today') await reportNotStartedToday();
+    else if (currentReport === 'daily-detail') await reportDailyDetail(from||new Date().toISOString().slice(0,10), dept);
+    else if (currentReport === 'attendance-rate') await reportAttendanceRate(month, year, dept);
+}
+
+async function reportMonthlySummary(month, year, dept) {
+    const data = await api(`/api/admin/dashboard/stats?month=${month}&year=${year}`);
+    const stats = (data.stats || []).filter(s => !dept || s.department === dept);
+    destroyChart('rptChart');
+    chartInstances['rptChart'] = new Chart(document.getElementById('rptCanvas'), {
+        type:'bar', data:{labels:stats.map(s=>s.name),datasets:[{label:'Regular',data:stats.map(s=>toHours(s.regular_hours)),backgroundColor:'#42a5f5'},{label:'OT',data:stats.map(s=>toHours(s.overtime_hours)),backgroundColor:'#ffa726'}]},
+        options:{responsive:true,scales:{x:{stacked:true},y:{stacked:true}},plugins:{title:{display:true,text:`Monthly Summary ${month}/${year}`}}}
+    });
+    let html = '<table class="table table-sm table-bordered"><thead><tr><th>Employee</th><th>Dept</th><th>Regular</th><th>OT</th><th>Total</th></tr></thead><tbody>';
+    stats.forEach(s => { html += `<tr><td>${s.name}</td><td>${s.department||'-'}</td><td>${s.regular_hours}</td><td>${s.overtime_hours}</td><td><strong>${s.total_hours}</strong></td></tr>`; });
+    html += '</tbody></table>';
+    document.getElementById('reportTableContent').innerHTML = html;
+}
+
+async function reportProjectHours(from, to) {
+    let url = '/api/timesheet/project-totals?';
+    if (from) url += `start_date=${from}&`;
+    if (to) url += `end_date=${to}&`;
+    const data = await api(url);
+    const projects = data.projects || [];
+    destroyChart('rptChart');
+    chartInstances['rptChart'] = new Chart(document.getElementById('rptCanvas'), {
+        type:'bar', data:{labels:projects.map(p=>p.project_name),datasets:[{label:'Regular',data:projects.map(p=>p.regular_seconds/3600),backgroundColor:'#42a5f5'},{label:'OT',data:projects.map(p=>p.overtime_seconds/3600),backgroundColor:'#ffa726'}]},
+        options:{responsive:true,scales:{x:{stacked:true},y:{stacked:true}},plugins:{title:{display:true,text:'Project Hours'}}}
+    });
+    let html = '<table class="table table-sm table-bordered"><thead><tr><th>Project</th><th>No</th><th>Regular</th><th>OT</th><th>Total</th></tr></thead><tbody>';
+    projects.forEach(p => { html += `<tr><td>${p.project_name}</td><td>${p.project_number}</td><td>${p.regular_hours}</td><td>${p.overtime_hours}</td><td><strong>${p.total_hours}</strong></td></tr>`; });
+    html += '</tbody></table>';
+    document.getElementById('reportTableContent').innerHTML = html;
+}
+
+async function reportOvertime(month, year) {
+    const data = await api(`/api/admin/dashboard/stats?month=${month}&year=${year}`);
+    const stats = (data.stats || []).filter(s => toHours(s.overtime_hours) > 0).sort((a,b) => toHours(b.overtime_hours) - toHours(a.overtime_hours));
+    destroyChart('rptChart');
+    chartInstances['rptChart'] = new Chart(document.getElementById('rptCanvas'), {
+        type:'bar', data:{labels:stats.map(s=>s.name),datasets:[{label:'OT Hours',data:stats.map(s=>toHours(s.overtime_hours)),backgroundColor:stats.map(s=>toHours(s.overtime_hours)>50?'#e53935':'#ffa726')}]},
+        options:{responsive:true,indexAxis:'y',plugins:{title:{display:true,text:`Overtime Report ${month}/${year}`}}}
+    });
+    // Also show OT requests
+    const otReqs = (await api('/api/overtime-requests?')).overtime_requests || [];
+    let html = '<table class="table table-sm table-bordered"><thead><tr><th>Employee</th><th>OT Hours</th><th>Requests</th><th>Approved</th><th>Rejected</th></tr></thead><tbody>';
+    stats.forEach(s => {
+        const empReqs = otReqs.filter(r => r.employee_name === s.name);
+        html += `<tr><td>${s.name}</td><td><strong>${s.overtime_hours}</strong></td><td>${empReqs.length}</td><td>${empReqs.filter(r=>r.status==='approved').length}</td><td>${empReqs.filter(r=>r.status==='rejected').length}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    document.getElementById('reportTableContent').innerHTML = html;
+}
+
+async function reportLeaves() {
+    const allLeaves = (await api('/api/leave-requests?')).leave_requests || [];
+    const catNames = {annual:'Annual',sick:'Sick',casual:'Casual'};
+    // Summary by employee
+    const empMap = {};
+    allLeaves.filter(l => l.status === 'approved').forEach(l => {
+        if (!empMap[l.employee_name]) empMap[l.employee_name] = {annual:0,sick:0,casual:0};
+        empMap[l.employee_name][l.leave_category] = (empMap[l.employee_name][l.leave_category]||0) + l.duration_days;
+    });
+    destroyChart('rptChart');
+    chartInstances['rptChart'] = new Chart(document.getElementById('rptCanvas'), {
+        type:'bar', data:{labels:Object.keys(empMap),datasets:[
+            {label:'Annual',data:Object.values(empMap).map(v=>v.annual),backgroundColor:'#42a5f5'},
+            {label:'Sick',data:Object.values(empMap).map(v=>v.sick),backgroundColor:'#ffa726'},
+            {label:'Casual',data:Object.values(empMap).map(v=>v.casual),backgroundColor:'#66bb6a'}
+        ]}, options:{responsive:true,scales:{x:{stacked:true},y:{stacked:true}},plugins:{title:{display:true,text:'Leave Usage Report'}}}
+    });
+    let html = '<table class="table table-sm table-bordered"><thead><tr><th>Employee</th><th>Annual Used</th><th>Sick Used</th><th>Casual Used</th><th>Total Days</th></tr></thead><tbody>';
+    Object.entries(empMap).forEach(([name,v]) => {
+        html += `<tr><td>${name}</td><td>${v.annual}</td><td>${v.sick}</td><td>${v.casual}</td><td><strong>${v.annual+v.sick+v.casual}</strong></td></tr>`;
+    });
+    html += '</tbody></table>';
+    document.getElementById('reportTableContent').innerHTML = html;
+}
+
+async function reportAttendance(from, to, dept) {
+    let url = '/api/admin/attendance-log?';
+    if (from) url += `start_date=${from}&`;
+    if (to) url += `end_date=${to}&`;
+    if (dept) url += `department=${encodeURIComponent(dept)}&`;
+    const data = await api(url);
+    const records = data.records || [];
+    // Summary
+    const present = records.filter(r => r.day_type === 'Present').length;
+    const absent = records.filter(r => r.day_type === 'Absent').length;
+    const leave = records.filter(r => r.day_type === 'Leave').length;
+    destroyChart('rptChart');
+    chartInstances['rptChart'] = new Chart(document.getElementById('rptCanvas'), {
+        type:'doughnut', data:{labels:['Present','Absent','Leave','No Fingerprint'],datasets:[{data:[present,absent,leave,records.length-present-absent-leave],backgroundColor:['#4caf50','#e53935','#42a5f5','#ffa726']}]},
+        options:{responsive:true,plugins:{title:{display:true,text:'Attendance Summary'}}}
+    });
+    let html = '<table class="table table-sm table-bordered"><thead><tr><th>Employee</th><th>Date</th><th>Check In</th><th>Check Out</th><th>Total</th><th>Day Type</th></tr></thead><tbody>';
+    records.forEach(r => { html += `<tr><td>${r.employee_name}</td><td>${r.date}</td><td>${r.check_in||'-'}</td><td>${r.check_out||'-'}</td><td>${r.total_time||'-'}</td><td>${r.day_type||'Present'}</td></tr>`; });
+    html += '</tbody></table>';
+    document.getElementById('reportTableContent').innerHTML = html;
+}
+
+async function reportDepartment(month, year) {
+    const data = await api(`/api/admin/dashboard/stats?month=${month}&year=${year}`);
+    const stats = data.stats || [];
+    const deptMap = {};
+    stats.forEach(s => {
+        const d = s.department || 'N/A';
+        if (!deptMap[d]) deptMap[d] = {count:0,regular:0,ot:0};
+        deptMap[d].count++;
+        deptMap[d].regular += toHours(s.regular_hours);
+        deptMap[d].ot += toHours(s.overtime_hours);
+    });
+    destroyChart('rptChart');
+    chartInstances['rptChart'] = new Chart(document.getElementById('rptCanvas'), {
+        type:'bar', data:{labels:Object.keys(deptMap),datasets:[
+            {label:'Regular',data:Object.values(deptMap).map(v=>v.regular.toFixed(1)),backgroundColor:'#42a5f5'},
+            {label:'OT',data:Object.values(deptMap).map(v=>v.ot.toFixed(1)),backgroundColor:'#ffa726'}
+        ]}, options:{responsive:true,plugins:{title:{display:true,text:`Department Report ${month}/${year}`}}}
+    });
+    let html = '<table class="table table-sm table-bordered"><thead><tr><th>Department</th><th>Employees</th><th>Regular Hours</th><th>OT Hours</th><th>Total</th><th>Avg/Employee</th></tr></thead><tbody>';
+    Object.entries(deptMap).forEach(([name,v]) => {
+        html += `<tr><td>${name}</td><td>${v.count}</td><td>${v.regular.toFixed(1)}</td><td>${v.ot.toFixed(1)}</td><td><strong>${(v.regular+v.ot).toFixed(1)}</strong></td><td>${((v.regular+v.ot)/v.count).toFixed(1)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    document.getElementById('reportTableContent').innerHTML = html;
+}
+
+async function reportEmployeeDetail(empId, month, year) {
+    if (!empId) { document.getElementById('reportTableContent').innerHTML = '<p class="text-muted">Please select an employee</p>'; return; }
+    const data = await api(`/api/admin/dashboard/stats?month=${month}&year=${year}`);
+    const emp = (data.stats || []).find(s => String(s.employee_id) === String(empId));
+    const sessions = (await api(`/api/timesheet/sessions?employee_id=${empId}&start_date=${year}-${String(month).padStart(2,'0')}-01&end_date=${year}-${String(month).padStart(2,'0')}-31`)).sessions || [];
+    const breaks = (await api(`/api/timesheet/breaks?employee_id=${empId}&start_date=${year}-${String(month).padStart(2,'0')}-01&end_date=${year}-${String(month).padStart(2,'0')}-31`)).breaks || [];
+    const leaves = (await api(`/api/leave-requests?employee_id=${empId}`)).leave_requests || [];
+
+    document.getElementById('reportChart').classList.add('d-none'); // Hide chart for detail
+
+    let html = `<div class="stat-card mb-3"><h6>${emp?emp.name:'Employee'} - ${month}/${year}</h6>
+    <div class="row g-2">
+        <div class="col-md-3"><div class="kpi-card"><h3 class="text-primary">${emp?emp.regular_hours:'0:00'}</h3><small>Regular Hours</small></div></div>
+        <div class="col-md-3"><div class="kpi-card"><h3 class="text-warning">${emp?emp.overtime_hours:'0:00'}</h3><small>OT Hours</small></div></div>
+        <div class="col-md-3"><div class="kpi-card"><h3 class="text-info">${emp?emp.total_hours:'0:00'}</h3><small>Total Hours</small></div></div>
+        <div class="col-md-3"><div class="kpi-card"><h3 class="text-success">${sessions.length}</h3><small>Sessions</small></div></div>
+    </div></div>`;
+    html += '<h6>Sessions</h6><table class="table table-sm table-bordered"><thead><tr><th>Date</th><th>Type</th><th>Project</th><th>Job</th><th>Task</th><th>Total</th></tr></thead><tbody>';
+    sessions.forEach(s => { html += `<tr><td>${s.date}</td><td>${s.hour_type}</td><td>${s.project_name||'-'}</td><td>${s.job_no||'-'}</td><td>${s.task_name||'-'}</td><td>${s.total_time||'-'}</td></tr>`; });
+    html += '</tbody></table>';
+    html += `<h6>Breaks (${breaks.length})</h6><table class="table table-sm table-bordered"><thead><tr><th>Date</th><th>Duration</th></tr></thead><tbody>`;
+    breaks.forEach(b => { html += `<tr><td>${b.start_time}</td><td>${b.duration_minutes} min</td></tr>`; });
+    html += '</tbody></table>';
+    html += `<h6>Leaves (${leaves.length})</h6><table class="table table-sm table-bordered"><thead><tr><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Status</th></tr></thead><tbody>`;
+    leaves.forEach(l => { html += `<tr><td>${l.leave_category}</td><td>${l.start_date}</td><td>${l.end_date}</td><td>${l.duration_days}</td><td>${l.status}</td></tr>`; });
+    html += '</tbody></table>';
+    document.getElementById('reportTableContent').innerHTML = html;
+}
+
+async function reportProjectComparison(from, to) { await reportProjectHours(from, to); }
+
+// Report: Who hasn't started today
+async function reportNotStartedToday() {
+    const today = new Date().toISOString().slice(0,10);
+    const data = await api(`/api/admin/not-started-today?date=${today}`);
+    const notStarted = data.employees || [];
+    const allEmps = data.all_count || 0;
+    document.getElementById('reportChart').classList.add('d-none');
+    let html = `<div class="alert alert-warning"><strong>${notStarted.length}</strong> out of <strong>${allEmps}</strong> employees have NOT started a session today (${today})</div>`;
+    if (notStarted.length === 0) {
+        html += '<div class="alert alert-success">All employees have started their sessions today!</div>';
+    } else {
+        html += '<table class="table table-sm table-bordered table-striped"><thead><tr><th>#</th><th>Employee ID</th><th>Name</th><th>Department</th><th>Position</th><th>Phone</th></tr></thead><tbody>';
+        notStarted.forEach((e, i) => {
+            html += `<tr class="table-warning"><td>${i+1}</td><td>${e.user_id||e.employee_id}</td><td><strong>${e.name}</strong></td><td>${e.department||'-'}</td><td>${e.position||'-'}</td><td>${e.phone||'-'}</td></tr>`;
+        });
+        html += '</tbody></table>';
+    }
+    document.getElementById('reportTableContent').innerHTML = html;
+}
+
+// Report: Daily Detail
+async function reportDailyDetail(date, dept) {
+    let url = `/api/admin/attendance-log?start_date=${date}&end_date=${date}`;
+    if (dept) url += `&department=${encodeURIComponent(dept)}`;
+    const data = await api(url);
+    const records = data.records || [];
+    document.getElementById('reportChart').classList.add('d-none');
+    let html = `<div class="alert alert-info">Daily Detail for <strong>${date}</strong> - ${records.length} records</div>`;
+    html += '<table class="table table-sm table-bordered"><thead><tr><th>ID</th><th>Name</th><th>Dept</th><th>Check In</th><th>Check Out</th><th>Total</th><th>Project Time</th><th>Break</th><th>OT</th><th>Day Type</th></tr></thead><tbody>';
+    records.forEach(r => {
+        const rowClass = r.day_type==='Absent'?'table-danger':r.day_type==='Leave'?'table-info':'';
+        html += `<tr class="${rowClass}"><td>${r.employee_id}</td><td>${r.employee_name}</td><td>${r.department||'-'}</td><td>${r.check_in||'-'}</td><td>${r.check_out||'-'}</td><td>${r.total_time||'-'}</td><td>${r.project_time||'-'}</td><td>${r.break_time||'-'}</td><td>${r.overtime||'-'}</td><td>${r.day_type||'Present'}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    document.getElementById('reportTableContent').innerHTML = html;
+}
+
+// Report: Attendance Rate
+async function reportAttendanceRate(month, year, dept) {
+    const data = await api(`/api/admin/dashboard/stats?month=${month}&year=${year}`);
+    const stats = (data.stats || []).filter(s => !dept || s.department === dept);
+    // Calculate attendance rate from sessions count vs working days
+    const workingDays = 22; // approximate
+    const empData = stats.map(s => ({
+        name: s.name,
+        dept: s.department||'-',
+        sessions: s.sessions_count || 0,
+        rate: Math.min(100, Math.round(((s.sessions_count||0) / workingDays) * 100))
+    })).sort((a,b) => b.rate - a.rate);
+    destroyChart('rptChart');
+    chartInstances['rptChart'] = new Chart(document.getElementById('rptCanvas'), {
+        type:'bar', data:{labels:empData.map(e=>e.name),datasets:[{label:'Attendance %',data:empData.map(e=>e.rate),backgroundColor:empData.map(e=>e.rate>=90?'#4caf50':e.rate>=70?'#ffa726':'#e53935')}]},
+        options:{responsive:true,scales:{y:{max:100}},plugins:{title:{display:true,text:`Attendance Rate ${month}/${year}`}}}
+    });
+    let html = '<table class="table table-sm table-bordered"><thead><tr><th>Employee</th><th>Department</th><th>Sessions</th><th>Rate %</th><th>Status</th></tr></thead><tbody>';
+    empData.forEach(e => {
+        const statusClass = e.rate>=90?'text-success':e.rate>=70?'text-warning':'text-danger';
+        const status = e.rate>=90?'Excellent':e.rate>=70?'Good':'Needs Attention';
+        html += `<tr><td>${e.name}</td><td>${e.dept}</td><td>${e.sessions}</td><td><strong>${e.rate}%</strong></td><td class="${statusClass}">${status}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    document.getElementById('reportTableContent').innerHTML = html;
+}
+
+async function reportBreaks(from, to) {
+    let url = '/api/timesheet/breaks?';
+    if (from) url += `start_date=${from}&`;
+    if (to) url += `end_date=${to}&`;
+    const data = await api(url);
+    const breaks = data.breaks || [];
+    // Group by employee
+    const empMap = {};
+    breaks.forEach(b => {
+        if (!empMap[b.employee_name]) empMap[b.employee_name] = {count:0,totalMin:0};
+        empMap[b.employee_name].count++;
+        empMap[b.employee_name].totalMin += b.duration_minutes || 0;
+    });
+    destroyChart('rptChart');
+    chartInstances['rptChart'] = new Chart(document.getElementById('rptCanvas'), {
+        type:'bar', data:{labels:Object.keys(empMap),datasets:[{label:'Break Minutes',data:Object.values(empMap).map(v=>v.totalMin),backgroundColor:'#ffa726'}]},
+        options:{responsive:true,plugins:{title:{display:true,text:'Break Time by Employee'}}}
+    });
+    let html = '<table class="table table-sm table-bordered"><thead><tr><th>Employee</th><th>Break Count</th><th>Total Minutes</th><th>Avg Minutes</th></tr></thead><tbody>';
+    Object.entries(empMap).forEach(([name,v]) => {
+        html += `<tr><td>${name}</td><td>${v.count}</td><td>${v.totalMin}</td><td>${v.count?(v.totalMin/v.count).toFixed(1):0}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    document.getElementById('reportTableContent').innerHTML = html;
+}
+
+function exportReportExcel() {
+    // Export current report view as Excel via timesheet export with current filters
+    const from = document.getElementById('rptFrom').value;
+    const to = document.getElementById('rptTo').value;
+    let url = '/api/timesheet/export/excel?';
+    if (from) url += `start_date=${from}&`;
+    if (to) url += `end_date=${to}&`;
+    window.location.href = url;
+}
+
+// ═══════════════════════════════════════
+// ACTIVITY FEED
+// ═══════════════════════════════════════
+let autoRefreshInterval = null;
+
+async function loadActivityFeed() {
+    const dept = document.getElementById('feedDept').value;
+    const limit = document.getElementById('feedLimit').value;
+    let url = `/api/activity-feed?limit=${limit}`;
+    if (dept) url += `&department=${encodeURIComponent(dept)}`;
+    const d = await api(url);
+    const body = document.getElementById('feedBody');
+    if (!d.success || !d.activities.length) { body.innerHTML = '<div class="text-muted text-center py-4">No activities yet</div>'; return; }
+    
+    // Icon mapping
+    const icons = {
+        session_start: 'bi-play-circle text-success',
+        session_end: 'bi-stop-circle text-danger',
+        break_start: 'bi-cup-hot text-warning',
+        break_end: 'bi-cup text-info',
+        leave_request: 'bi-calendar-plus text-primary',
+        ot_request: 'bi-clock-history text-warning',
+        auto_clockout: 'bi-clock text-danger',
+        check_in: 'bi-box-arrow-in-right text-success',
+        check_out: 'bi-box-arrow-right text-secondary'
+    };
+    
+    body.innerHTML = d.activities.map(a => {
+        const iconClass = icons[a.activity_type] || 'bi-activity text-muted';
+        const time = new Date(a.created_at).toLocaleString();
+        return `<div class="d-flex align-items-start p-2 border-bottom">
+            <i class="bi ${iconClass} me-3" style="font-size:20px;margin-top:3px"></i>
+            <div class="flex-grow-1">
+                <strong>${a.employee_name}</strong> <span class="badge bg-light text-dark">${a.department||''}</span>
+                <div class="text-muted small">${a.description||a.activity_type}</div>
+                ${a.project_name ? '<span class="badge bg-primary">'+a.project_name+'</span>' : ''}
+            </div>
+            <small class="text-muted">${time}</small>
+        </div>`;
+    }).join('');
+}
+
+function toggleAutoRefresh() {
+    const btn = document.getElementById('autoRefreshBtn');
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+        btn.innerHTML = '<i class="bi bi-broadcast"></i> Auto-Refresh: OFF';
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-success');
+    } else {
+        autoRefreshInterval = setInterval(loadActivityFeed, 10000); // Every 10 seconds
+        btn.innerHTML = '<i class="bi bi-broadcast-pin"></i> Auto-Refresh: ON';
+        btn.classList.remove('btn-outline-success');
+        btn.classList.add('btn-success');
+    }
+}
+
+// ═══════════════════════════════════════
+// MONTHLY GOALS
+// ═══════════════════════════════════════
+function initGoalFilters() {
+    const ms = document.getElementById('goalMonth');
+    const ys = document.getElementById('goalYear');
+    if (ms.options.length > 1) return; // Already initialized
+    const now = new Date();
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    months.forEach((m,i) => { const o = new Option(m, i+1); if(i+1===now.getMonth()+1) o.selected=true; ms.add(o); });
+    for(let y=now.getFullYear()-1; y<=now.getFullYear()+1; y++) { const o = new Option(y,y); if(y===now.getFullYear()) o.selected=true; ys.add(o); }
+}
+
+async function loadGoals() {
+    const month = document.getElementById('goalMonth').value;
+    const year = document.getElementById('goalYear').value;
+    const d = await api(`/api/goals?month=${month}&year=${year}`);
+    const body = document.getElementById('goalBody');
+    const cards = document.getElementById('goalCards');
+    
+    if (!d.success || !d.goals.length) {
+        body.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No goals set for this period. Click "Set Goals for All" to create.</td></tr>';
+        cards.innerHTML = '';
+        return;
+    }
+    
+    // Summary cards
+    const total = d.goals.length;
+    const avgProgress = Math.round(d.goals.reduce((s,g) => s + g.progress_pct, 0) / total);
+    const onTrack = d.goals.filter(g => g.progress_pct >= 80).length;
+    const behind = d.goals.filter(g => g.progress_pct < 50).length;
+    
+    cards.innerHTML = `
+        <div class="col-md-3"><div class="kpi-card"><h3>${total}</h3><small>Total Goals</small></div></div>
+        <div class="col-md-3"><div class="kpi-card" style="border-left:4px solid #27ae60"><h3>${avgProgress}%</h3><small>Avg Progress</small></div></div>
+        <div class="col-md-3"><div class="kpi-card" style="border-left:4px solid #2ecc71"><h3>${onTrack}</h3><small>On Track (≥80%)</small></div></div>
+        <div class="col-md-3"><div class="kpi-card" style="border-left:4px solid #e74c3c"><h3>${behind}</h3><small>Behind (<50%)</small></div></div>
+    `;
+    
+    body.innerHTML = d.goals.map(g => {
+        const color = g.progress_pct >= 80 ? 'success' : g.progress_pct >= 50 ? 'warning' : 'danger';
+        return `<tr>
+            <td><a href="#" onclick="openProfile(${g.employee_id})">${g.employee_name}</a></td>
+            <td>${g.department}</td>
+            <td>${g.target_hours}</td>
+            <td>${g.actual_hours}</td>
+            <td>${g.billable_hours}</td>
+            <td><div class="progress" style="height:20px"><div class="progress-bar bg-${color}" style="width:${Math.min(g.progress_pct,100)}%">${g.progress_pct}%</div></div></td>
+            <td><button class="btn btn-sm btn-outline-primary" onclick="editGoal(${g.employee_id},'${g.employee_name}',${g.target_hours})"><i class="bi bi-pencil"></i></button></td>
+        </tr>`;
+    }).join('');
+}
+
+function editGoal(empId, empName, currentTarget) {
+    const target = prompt(`Set target hours for ${empName}:`, currentTarget);
+    if (target && !isNaN(target)) {
+        const month = document.getElementById('goalMonth').value;
+        const year = document.getElementById('goalYear').value;
+        api('/api/goals', 'POST', { employee_id: empId, month: parseInt(month), year: parseInt(year), target_hours: parseFloat(target) })
+            .then(d => { if(d.success) loadGoals(); else alert(d.error); });
+    }
+}
+
+function showBulkGoalModal() {
+    const target = prompt('Set target hours for ALL employees:', 176);
+    if (target && !isNaN(target)) {
+        const month = document.getElementById('goalMonth').value;
+        const year = document.getElementById('goalYear').value;
+        api('/api/goals/bulk', 'POST', { month: parseInt(month), year: parseInt(year), target_hours: parseFloat(target) })
+            .then(d => { if(d.success) { alert(d.message); loadGoals(); } else alert(d.error); });
+    }
+}
+
+function showSetGoalModal() {
+    const empId = prompt('Enter Employee ID:');
+    if (empId) {
+        const target = prompt('Set target hours:', 176);
+        if (target && !isNaN(target)) {
+            const month = document.getElementById('goalMonth').value;
+            const year = document.getElementById('goalYear').value;
+            api('/api/goals', 'POST', { employee_id: parseInt(empId), month: parseInt(month), year: parseInt(year), target_hours: parseFloat(target) })
+                .then(d => { if(d.success) loadGoals(); else alert(d.error); });
+        }
+    }
+}
+
+// ═══════════════════════════════════════
+// ORG CHART
+// ═══════════════════════════════════════
+async function loadOrgChart() {
+    const d = await api('/api/org-chart');
+    const container = document.getElementById('orgChartContainer');
+    if (!d.success || !d.chart.length) { container.innerHTML = '<div class="text-muted text-center py-5">No organization data</div>'; return; }
+    
+    function renderNode(node, level=0) {
+        const roleColors = { admin:'#e74c3c', hr:'#9b59b6', planning:'#f39c12', manager:'#2980b9', employee:'#27ae60' };
+        const color = roleColors[node.role] || '#95a5a6';
+        const indent = level * 40;
+        let html = `<div style="margin-left:${indent}px;margin-bottom:8px;display:flex;align-items:center">`;
+        if (level > 0) html += '<div style="width:30px;border-bottom:2px solid #ddd;margin-right:8px"></div>';
+        html += `<div class="d-flex align-items-center p-2 rounded" style="background:#f8f9fa;border-left:4px solid ${color};min-width:250px;cursor:pointer" onclick="openProfile(${node.id})">`;
+        html += `<div class="rounded-circle d-flex align-items-center justify-content-center me-2" style="width:36px;height:36px;background:${color};color:#fff;font-weight:bold;font-size:14px">${node.name.charAt(0)}</div>`;
+        html += `<div><strong style="font-size:13px">${node.name}</strong><br><small class="text-muted">${node.position}</small>`;
+        html += ` <span class="badge" style="background:${color};font-size:10px">${node.role}</span>`;
+        html += `<br><small class="text-muted">${node.department}</small></div></div></div>`;
+        if (node.children && node.children.length) {
+            node.children.forEach(c => html += renderNode(c, level + 1));
+        }
+        return html;
+    }
+    
+    container.innerHTML = `<div class="mb-2 text-muted"><i class="bi bi-people"></i> Total: ${d.total_employees} employees</div>` + d.chart.map(n => renderNode(n)).join('');
+}
+
+// ═══════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════
+let auditPage = 1;
+
+async function loadAuditLog(page=1) {
+    auditPage = page;
+    const empId = document.getElementById('auditEmp').value;
+    const action = document.getElementById('auditAction').value;
+    const entity = document.getElementById('auditEntity').value;
+    const from = document.getElementById('auditFrom').value;
+    const to = document.getElementById('auditTo').value;
+    
+    let url = `/api/audit-log?page=${page}&per_page=50`;
+    if (empId) url += `&employee_id=${empId}`;
+    if (action) url += `&action=${action}`;
+    if (entity) url += `&entity_type=${entity}`;
+    if (from) url += `&start_date=${from}`;
+    if (to) url += `&end_date=${to}`;
+    
+    const d = await api(url);
+    const body = document.getElementById('auditBody');
+    
+    if (!d.success || !d.entries.length) {
+        body.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No audit entries found</td></tr>';
+        document.getElementById('auditPagination').innerHTML = '';
+        return;
+    }
+    
+    // Action badge colors
+    const actionColors = {
+        session_start:'success', session_end:'secondary', break_start:'warning', break_end:'info',
+        leave_request:'primary', leave_approve:'success', leave_reject:'danger',
+        ot_request:'warning', ot_approve:'success', ot_reject:'danger',
+        login:'info', logout:'secondary', employee_edit:'primary', employee_create:'success',
+        auto_clockout:'danger', goal_set:'primary'
+    };
+    
+    body.innerHTML = d.entries.map(e => {
+        const time = new Date(e.created_at).toLocaleString();
+        const badgeColor = actionColors[e.action] || 'secondary';
+        return `<tr>
+            <td>${e.id}</td>
+            <td><small>${time}</small></td>
+            <td>${e.employee_name||'System'}</td>
+            <td><span class="badge bg-${badgeColor}">${e.action}</span></td>
+            <td>${e.entity_type||'-'} ${e.entity_id ? '#'+e.entity_id : ''}</td>
+            <td><small>${e.description||'-'}</small></td>
+            <td><small class="text-muted">${e.ip_address||'-'}</small></td>
+        </tr>`;
+    }).join('');
+    
+    // Pagination
+    const totalPages = Math.ceil(d.total / d.per_page);
+    const pag = document.getElementById('auditPagination');
+    let pagHtml = '';
+    if (page > 1) pagHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadAuditLog(${page-1})">&laquo;</a></li>`;
+    for (let i = Math.max(1,page-3); i <= Math.min(totalPages,page+3); i++) {
+        pagHtml += `<li class="page-item ${i===page?'active':''}"><a class="page-link" href="#" onclick="loadAuditLog(${i})">${i}</a></li>`;
+    }
+    if (page < totalPages) pagHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadAuditLog(${page+1})">&raquo;</a></li>`;
+    pag.innerHTML = pagHtml;
+}
+
+// ═══════════════════════════════════════
+// DEPARTMENT WIDGETS
+// ═══════════════════════════════════════
+async function loadDeptWidgets() {
+    const d = await api('/api/department-widgets');
+    const container = document.getElementById('deptWidgetsContainer');
+    if (!d.success || !d.departments.length) { container.innerHTML = '<div class="text-muted text-center py-5">No department data</div>'; return; }
+    
+    const colors = ['#1a237e','#283593','#303f9f','#3949ab','#3f51b5','#5c6bc0','#7986cb','#9fa8da'];
+    
+    container.innerHTML = d.departments.map((dept, i) => {
+        const color = colors[i % colors.length];
+        const activeRate = dept.total_employees > 0 ? Math.round(dept.active_now / dept.total_employees * 100) : 0;
+        return `<div class="col-md-4 col-lg-3">
+            <div class="stat-card" style="border-top:4px solid ${color}">
+                <h6 style="color:${color}">${dept.department}</h6>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="badge bg-secondary">${dept.total_employees} employees</span>
+                    <span class="badge bg-success">${activeRate}% active</span>
+                </div>
+                <div class="row g-1 text-center" style="font-size:11px">
+                    <div class="col-3"><div class="p-1 rounded" style="background:#e8f5e9"><strong class="text-success">${dept.active_now}</strong><br>Active</div></div>
+                    <div class="col-3"><div class="p-1 rounded" style="background:#fff8e1"><strong class="text-warning">${dept.on_break}</strong><br>Break</div></div>
+                    <div class="col-3"><div class="p-1 rounded" style="background:#e3f2fd"><strong class="text-primary">${dept.on_leave}</strong><br>Leave</div></div>
+                    <div class="col-3"><div class="p-1 rounded" style="background:#fce4ec"><strong class="text-danger">${dept.absent}</strong><br>Absent</div></div>
+                </div>
+                <div class="mt-2 text-center"><small class="text-muted">Avg: ${dept.avg_monthly_hours}h | Total: ${dept.total_monthly_hours}h</small></div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ═══════════════════════════════════════
+// EMPLOYEE PROFILE
+// ═══════════════════════════════════════
+async function openProfile(empId) {
+    const d = await api(`/api/employee-profile/${empId}`);
+    if (!d.success) { alert(d.error || 'Failed to load profile'); return; }
+    const p = d.profile;
+    const s = d.stats;
+    const lb = d.leave_balance;
+    const g = d.goal;
+    
+    const roleColors = { admin:'danger', hr:'purple', planning:'warning', manager:'primary', employee:'success' };
+    const roleColor = roleColors[p.role] || 'secondary';
+    
+    document.getElementById('profileBody').innerHTML = `
+    <div class="row">
+        <!-- Left: Profile Info -->
+        <div class="col-md-4">
+            <div class="text-center mb-3">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width:80px;height:80px;background:var(--bs-${roleColor});color:#fff;font-size:32px;font-weight:bold">${p.name.charAt(0)}</div>
+                <h5 class="mt-2 mb-0">${p.name}</h5>
+                <span class="badge bg-${roleColor}">${p.role}</span>
+                <p class="text-muted small mb-0">${p.position||'-'} | ${p.department||'-'}</p>
+                <p class="text-muted small">${p.email||'No email'}</p>
+            </div>
+            <table class="table table-sm">
+                <tr><td>User ID</td><td><strong>${p.user_id}</strong></td></tr>
+                <tr><td>Manager</td><td>${p.manager ? p.manager.name : '-'}</td></tr>
+                <tr><td>Joined</td><td>${p.created_at ? new Date(p.created_at).toLocaleDateString() : '-'}</td></tr>
+                <tr><td>Subordinates</td><td>${p.subordinates.length > 0 ? p.subordinates.map(s=>'<span class="badge bg-light text-dark me-1">'+s.name+'</span>').join('') : 'None'}</td></tr>
+            </table>
+        </div>
+        <!-- Right: Stats -->
+        <div class="col-md-8">
+            <div class="row g-2 mb-3">
+                <div class="col-md-3"><div class="kpi-card" style="border-left:4px solid #1a237e"><h3>${s.month_hours}</h3><small>Month Hours</small></div></div>
+                <div class="col-md-3"><div class="kpi-card" style="border-left:4px solid #27ae60"><h3>${s.attendance_rate}%</h3><small>Attendance</small></div></div>
+                <div class="col-md-3"><div class="kpi-card" style="border-left:4px solid #e67e22"><h3>${s.ot_approved_this_month}</h3><small>OT Approved</small></div></div>
+                <div class="col-md-3"><div class="kpi-card" style="border-left:4px solid #2980b9"><h3>${s.present_days}/${s.working_days}</h3><small>Days Present</small></div></div>
+            </div>
+            <!-- Goal Progress -->
+            <div class="stat-card mb-3">
+                <h6>Monthly Goal Progress</h6>
+                <div class="progress" style="height:25px">
+                    <div class="progress-bar ${g.progress_pct>=80?'bg-success':g.progress_pct>=50?'bg-warning':'bg-danger'}" style="width:${Math.min(g.progress_pct,100)}%">${g.progress_pct}% (${g.actual_hours}h / ${g.target_hours}h)</div>
+                </div>
+            </div>
+            <!-- Leave Balance -->
+            <div class="stat-card mb-3">
+                <h6>Leave Balance</h6>
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <div class="p-2 rounded" style="background:#e3f2fd"><strong>Annual</strong><br>
+                        <span class="text-success">${lb.annual.remaining}</span> / ${lb.annual.total} remaining<br>
+                        <small class="text-muted">${lb.annual.used} used</small></div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-2 rounded" style="background:#fce4ec"><strong>Sick</strong><br>
+                        <span class="text-success">${lb.sick.remaining}</span> / ${lb.sick.total} remaining<br>
+                        <small class="text-muted">${lb.sick.used} used</small></div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-2 rounded" style="background:#fff8e1"><strong>Casual</strong><br>
+                        <span class="text-success">${lb.casual.remaining}</span> / ${lb.casual.total} remaining<br>
+                        <small class="text-muted">${lb.casual.used} used</small></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Recent Sessions -->
+            <div class="stat-card">
+                <h6>Recent Sessions</h6>
+                <table class="table table-sm">
+                    <thead><tr><th>Date</th><th>Task</th><th>Project</th><th>Type</th><th>Time</th><th>Status</th></tr></thead>
+                    <tbody>${d.recent_sessions.map(s => {
+                        const hrs = Math.floor(s.elapsed/3600);
+                        const mins = Math.floor((s.elapsed%3600)/60);
+                        return `<tr><td>${s.date}</td><td>${s.task_name}</td><td>${s.project_name}</td><td>${s.hour_type||'-'}</td><td>${hrs}h ${mins}m</td><td><span class="badge bg-${s.status==='completed'?'success':s.status==='running'?'primary':'secondary'}">${s.status}</span></td></tr>`;
+                    }).join('')}</tbody>
+                </table>
+            </div>
+        </div>
+    </div>`;
+    
+    new bootstrap.Modal(document.getElementById('profileModal')).show();
+}
+
+// ═══════════════════════════════════════
+// AUTO CLOCK-OUT (Admin button)
+// ═══════════════════════════════════════
+async function handleLogout() {
+    try {
+        const response = await fetch('/api/logout', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            window.location.replace('/login?t=' + new Date().getTime());
+        } else {
+            alert('Logout failed: ' + (data.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Logout error:', error);
+        window.location.replace('/login');
+    }
+}
+
+async function runAutoClockout() {
+    // First check what would be affected
+    const check = await api('/api/auto-clockout/check');
+    if (!check.success) { alert('Error checking auto clock-out'); return; }
+    if (check.would_close === 0) { alert('No sessions to close'); return; }
+    
+    if (!confirm(`This will close ${check.would_close} running sessions. Continue?`)) return;
+    
+    const d = await api('/api/auto-clockout', 'POST');
+    if (d.success) {
+        alert(d.message);
+        loadDashboard();
+    } else {
+        alert(d.error || 'Failed');
+    }
+}
+
+
+// ═══════════════════════════════════════
+    // تعريف الصلاحيات لكل دور
+async function applyPermissions() {
+    const userData = await api('/api/current_user');
+    if (!userData || !userData.user) return;
+
+    const user = userData.user;
+
+    // ✅ نخزن المستخدم globally
+    window.currentUser = user;
+
+    const role = (user.role || '').toLowerCase();
+    const isAdmin = user.is_admin;
+
+    document.getElementById('adminRoleBadge').textContent = roleLabel(user.role);
+
+    const permissions = {
+        'admin': ['dashboard', 'employees', 'projects', 'attendance-log', 'timesheet', 'ot-approval', 'leaves', 'tasks', 'ratings', 'fingerprint', 'breaks', 'reports', 'activity-feed', 'goals', 'org-chart', 'audit-log', 'dept-widgets'],
+        'hr': ['dashboard', 'attendance-log', 'ot-approval', 'leaves', 'fingerprint', 'breaks', 'reports', 'activity-feed'],
+        'planning': ['dashboard', 'projects', 'timesheet', 'tasks', 'reports'],
+        'manager': ['dashboard', 'attendance-log', 'timesheet', 'ot-approval', 'leaves', 'tasks', 'ratings', 'reports', 'activity-feed', 'goals', 'org-chart'],
+        'team leader': ['dashboard', 'ratings', 'tasks', 'activity-feed']
+    };
+
+    const allowedTabs = isAdmin ? permissions['admin'] : (permissions[role] || []);
+
+    document.querySelectorAll('.sidebar .nav-link[data-tab]').forEach(link => {
+        const tabName = link.getAttribute('data-tab');
+        if (!allowedTabs.includes(tabName)) {
+            link.style.display = 'none';
+        }
+    });
+
+    const currentTab = document.querySelector('.nav-link.active')?.getAttribute('data-tab');
+    if (!allowedTabs.includes(currentTab) && allowedTabs.length > 0) {
+        showTab(allowedTabs[0]);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    if (currentLang === 'ar') toggleLanguage();
+    initReportFilters();
+    await applyPermissions();
+    loadEmployees();
+    loadProjects();
+    loadDashboard();
+    // Check pending counts
+    api('/api/overtime-requests?status=pending').then(d => {
+        const c = (d.overtime_requests||[]).length;
+        if (c && document.getElementById('otBadge')) { document.getElementById('otBadge').style.display=''; document.getElementById('otBadge').textContent=c; }
+    });
+    api('/api/leave-requests?status=pending').then(d => {
+        const c = (d.leave_requests||[]).length;
+        if (c && document.getElementById('leaveBadge')) { document.getElementById('leaveBadge').style.display=''; document.getElementById('leaveBadge').textContent=c; }
+    });
+});
+
+
+</script>
+</body>
+</html>

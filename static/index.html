@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Sheet AFCO - Employee Portal</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+body{background:#f0f2f5;font-family:'Segoe UI',Tahoma,sans-serif;font-size:13px}
+.main-card{max-width:900px;margin:20px auto;background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);overflow:hidden}
+.header-bar{background:linear-gradient(135deg,#1a237e,#283593);color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}
+.header-bar h5{margin:0;font-size:16px}
+.tab-section{display:none;padding:15px}.tab-section.active{display:block}
+.sub-section{padding:10px 0}
+.timer-box{font-size:32px;font-weight:bold;font-family:'Courier New',monospace;text-align:center;padding:10px;background:#f8f9fa;border-radius:12px;margin:10px 0}
+.timer-box.overtime{background:#fff3cd;color:#856404;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.progress-bar-custom{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden;margin:5px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,#4caf50,#8bc34a);border-radius:4px;transition:width .5s}
+.progress-fill.ot{background:linear-gradient(90deg,#ff9800,#f44336)}
+.session-info{background:#e8f5e9;border-radius:8px;padding:10px;margin:8px 0;font-size:12px}
+.session-info.ot{background:#fff8e1}
+.ot-badge{background:#ff9800;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px}
+.toast-custom{position:fixed;top:20px;left:50%;transform:translateX(-50%);color:#fff;padding:10px 24px;border-radius:8px;z-index:9999;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.break-timer{background:#fff3cd;border-radius:8px;padding:8px 15px;text-align:center;margin:5px 0}
+.break-timer .countdown{font-size:20px;font-weight:bold;color:#856404;font-family:'Courier New',monospace}
+.break-timer .remaining{font-size:11px;color:#666}
+.lang-btn{position:fixed;top:10px;right:10px;z-index:9999}
+@media(max-width:576px){.timer-box{font-size:24px}.main-card{margin:10px;border-radius:10px}}
+</style>
+</head>
+<div class="modal fade" id="passwordModal"><div class="modal fade" id="passworddiv class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Change Password</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <input type="password" id="oldPass" class="form-control mb-2" placeholder="Old Password">
+
+        <input type="password" id="newPass" class="form-control mb-2" placeholder="New Password">
+
+        <input type="password" id="confirmPass" class="form-control mb-2" placeholder="Confirm Password">
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="changePassword()">Update</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<body>
+<button class="btn btn-sm btn-outline-primary lang-btn" onclick="toggleLang()" id="langBtn">العربية</button>
+
+<div class="main-card">
+<div class="header-bar">
+<div><h5 id="welcomeMsg">Welcome</h5><small id="userRoleText" class="opacity-75"></small></div>
+
+<div class="d-flex gap-2 align-items-center"><div class <!-- ✅ زر تغيير الباسورد -->
+    <button class="btn btn-outline-light btn-sm" onclick="openPasswordModal()">
+        <i class="bi bi-key"></i>
+    </button>
+
+    <a id="adminBtn" href="/admin" class="btn btn-warning btn-sm d-none">
+        <i class="bi bi-gear"></i>
+    </a>
+
+    <button class="btn btn-outline-light btn-sm" onclick="logout()">
+        <i class="bi bi-box-arrow-right"></i>
+    </button>
+
+</div>
+
+
+</div>
+    <footer style="text-align: center; padding: 5px; background: #f8f9fa; border-top: 1px solid #dee2e6; font-size: 11px; color: #6c757d;">
+        Time Sheet AFCO | By Amir Ayman
+    </footer>
+</div>
+
+<!-- Navigation Tabs -->
+<ul class="nav nav-tabs px-2 pt-2" id="mainTabs">
+<li class="nav-item"><a class="nav-link active" href="#" data-tab="attendance" onclick="showTab('attendance')"><i class="bi bi-clock"></i> <span data-ar="الحضور" data-en="Attendance">Attendance</span></a></li>
+<li class="nav-item"><a class="nav-link" href="#" data-tab="timesheet" onclick="showTab('timesheet')"><i class="bi bi-journal-text"></i> <span data-ar="الجلسات" data-en="Sessions">Sessions</span></a></li>
+<li class="nav-item"><a class="nav-link" href="#" data-tab="leaves" onclick="showTab('leaves')"><i class="bi bi-calendar-check"></i> <span data-ar="الإجازات" data-en="Leaves">Leaves</span></a></li>
+<li class="nav-item"><a class="nav-link" href="#" data-tab="my-tasks" onclick="showTab('my-tasks')"><i class="bi bi-list-task"></i> <span data-ar="مهامي" data-en="My Tasks">My Tasks</span></a></li>
+<li class="nav-item"><a class="nav-link" href="#" data-tab="fingerprint" onclick="showTab('fingerprint')"><i class="bi bi-fingerprint"></i> <span data-ar="البصمة" data-en="Fingerprint">Fingerprint</span></a></li>
+<li class="nav-item"><a class="nav-link" href="#" data-tab="notifications" onclick="showTab('notifications')"><i class="bi bi-bell"></i> <span data-ar="إشعارات" data-en="Alerts">Alerts</span></a></li>
+<li class="nav-item"><a onclick="showTab('tab-password')" class="nav-link">Change Password</a></li>
+</ul>
+
+<!-- ══════ Attendance Tab ══════ -->
+<div id="tab-attendance" class="tab-section active">
+<!-- Check In/Out removed - attendance tracked via sessions -->
+
+<!-- Timer & Progress -->
+<div class="timer-box" id="timerBox">00:00:00</div>
+<div class="progress-bar-custom"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+<div class="text-center small text-muted" id="hoursInfo">Today: 00:00:00 / 08:00:00</div>
+<div id="otAlertBox" class="alert alert-warning mt-2 d-none py-1 small"><i class="bi bi-exclamation-triangle"></i> <span data-ar="تجاوزت الحد! يتم احتساب الوقت الإضافي" data-en="Overtime threshold reached! Counting as OT">Overtime threshold reached! Counting as OT</span></div>
+
+<!-- Break Section - Employee can take break anytime, mandatory 12:30-13:30 -->
+<div class="d-flex gap-2 mt-2 align-items-center">
+<button class="btn btn-warning btn-sm" id="breakStartBtn" onclick="startBreak()"><i class="bi bi-cup-hot"></i> <span data-ar="بدء بريك" data-en="Start Break">Start Break</span></button>
+<button class="btn btn-info btn-sm d-none" id="breakEndBtn" onclick="endBreak()"><i class="bi bi-play-circle"></i> <span data-ar="إنهاء بريك" data-en="End Break">End Break</span></button>
+</div>
+<div class="break-timer d-none" id="breakTimer">
+<div><i class="bi bi-cup-hot"></i> <span data-ar="فترة الراحة" data-en="Break Time">Break Time</span></div>
+<div class="countdown" id="breakTimerDisplay">00:00</div>
+<div class="remaining" id="breakRemaining">Remaining: 60:00</div>
+</div>
+
+<!-- Session Form -->
+<div class="mt-3" id="tsForm">
+<h6 data-ar="بدء جلسة عمل" data-en="Start Work Session">Start Work Session</h6>
+<div class="row g-2">
+<div class="col-md-4">
+<select class="form-select form-select-sm" id="hourType" onchange="toggleFields()">
+<option value="" data-ar="-- اختر النوع --" data-en="-- Select Type --">-- Select Type --</option>
+<option value="WORK ORDER">WORK ORDER</option>
+<option value="OVERTIME">OVERTIME</option>
+<option value="TRAINING">TRAINING</option>
+<option value="MEETING">MEETING</option>
+<option value="IDLE">IDLE</option>
+<option value="VACATION">VACATION</option>
+</select>
+</div>
+</div>
+<!-- Project fields (shown for WORK ORDER / OVERTIME) -->
+<div id="projFields" class="d-none mt-2">
+<div class="row g-2">
+<div class="col-md-3"><label class="form-label small">Project</label><select class="form-select form-select-sm" id="projSel" onchange="loadJobs()"><option value="">-- Select Project --</option></select></div>
+<div class="col-md-3"><label class="form-label small">Job No</label><select class="form-select form-select-sm" id="jobSel"><option value="">-- Select Job --</option></select></div>
+<div class="col-md-3"><label class="form-label small">Task</label><input type="text" class="form-control form-control-sm" id="taskInput" placeholder="Task name"></div>
+<div class="col-md-3"><label class="form-label small">Description</label><textarea class="form-control form-control-sm" id="descInputProj" rows="1" placeholder="Optional"></textarea></div>
+</div>
+</div>
+<!-- Description field (shown for TRAINING/MEETING/IDLE/VACATION) -->
+<div id="descFields" class="d-none mt-2">
+<div class="row g-2">
+<div class="col-md-12"><textarea class="form-control form-control-sm" id="descInput" rows="2" placeholder="Description (optional)"></textarea></div>
+</div>
+</div>
+<div class="mt-2">
+<button type="button" class="btn btn-primary btn-sm" id="startSessBtn" onclick="startSession()"><i class="bi bi-play-fill"></i> <span data-ar="بدء الجلسة" data-en="Start Session">Start Session</span></button>
+</div>
+<div id="sessMsg" class="alert d-none mt-2"></div>
+</div>
+
+<!-- End Session Button -->
+<div class="d-none mt-2" id="endBtn">
+<button class="btn btn-danger btn-sm" onclick="endSession()"><i class="bi bi-stop-fill"></i> <span data-ar="إنهاء الجلسة" data-en="End Session">End Session</span></button>
+</div>
+
+<!-- Session Info Card -->
+<div class="session-info d-none" id="sessionInfoCard">
+<div class="row">
+<div class="col-6"><small class="text-muted" data-ar="النوع" data-en="Type">Type</small>: <strong id="siType">-</strong></div>
+<div class="col-6"><small class="text-muted" data-ar="المشروع" data-en="Project">Project</small>: <strong id="siProj">-</strong></div>
+<div class="col-6"><small class="text-muted">Job</small>: <strong id="siJob">-</strong></div>
+<div class="col-6"><small class="text-muted" data-ar="المهمة" data-en="Task">Task</small>: <strong id="siTask">-</strong></div>
+<div class="col-12 d-none" id="siDescRow"><small class="text-muted" data-ar="الوصف" data-en="Description">Description</small>: <span id="siDesc">-</span></div>
+</div>
+</div>
+</div>
+
+<!-- ══════ Sessions/Timesheet Tab ══════ -->
+<div id="tab-timesheet" class="tab-section">
+<ul class="nav nav-pills mb-2">
+<li class="nav-item"><a class="nav-link active" href="#" data-sub="history" onclick="showSubTab('history')"><span data-ar="السجل" data-en="History">History</span></a></li>
+<li class="nav-item"><a class="nav-link" href="#" data-sub="ot-request" onclick="showSubTab('ot-request')"><span data-ar="طلب OT" data-en="OT Request">OT Request</span></a></li>
+</ul>
+
+<!-- History Sub-tab -->
+<div id="sub-history" class="sub-section">
+<div class="row g-2 mb-2">
+<div class="col-md-2"><select class="form-select form-select-sm" id="histProj"><option value="">All Projects</option></select></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="histProjNum"><option value="">All Proj No</option></select></div>
+<div class="col-md-2"><input type="text" class="form-control form-control-sm" id="histJob" placeholder="Job No"></div>
+<div class="col-md-2"><select class="form-select form-select-sm" id="histType"><option value="">All Types</option><option>WORK ORDER</option><option>OVERTIME</option><option>TRAINING</option><option>MEETING</option><option>IDLE</option><option>VACATION</option></select></div>
+<div class="col-md-2"><input type="date" class="form-control form-control-sm" id="histFrom"></div>
+<div class="col-md-2"><input type="date" class="form-control form-control-sm" id="histTo"></div>
+</div>
+<div class="mb-2"><button class="btn btn-sm btn-primary" onclick="loadHistory()"><i class="bi bi-search"></i> <span data-ar="بحث" data-en="Search">Search</span></button></div>
+<div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr>
+<th data-ar="التاريخ" data-en="Date">Date</th>
+<th data-ar="رقم المشروع" data-en="Proj No">Proj No</th>
+<th data-ar="المشروع" data-en="Project">Project</th>
+<th>Job</th>
+<th data-ar="المهمة" data-en="Task">Task</th>
+<th data-ar="الوصف" data-en="Desc">Desc</th>
+<th data-ar="النوع" data-en="Type">Type</th>
+<th data-ar="الموافقة" data-en="Approval">Approval</th>
+<th data-ar="الإجمالي" data-en="Total">Total</th>
+</tr></thead><tbody id="histBody"></tbody></table></div>
+</div>
+
+<!-- OT Request Sub-tab -->
+<div id="sub-ot-request" class="sub-section d-none">
+<h6 data-ar="طلب وقت إضافي" data-en="Overtime Request">Overtime Request</h6>
+<div class="row g-2 mb-2">
+<div class="col-md-4"><input type="date" class="form-control form-control-sm" id="otDate"></div>
+<div class="col-md-4"><input type="text" class="form-control form-control-sm" id="otReason" placeholder="Reason (optional)"></div>
+<div class="col-md-4">
+<button class="btn btn-primary btn-sm" onclick="submitOTRequest()"><i class="bi bi-send"></i> <span data-ar="إرسال" data-en="Submit">Submit</span></button>
+<button class="btn btn-outline-secondary btn-sm" onclick="openOTMailto()" title="Send via Outlook"><i class="bi bi-envelope"></i></button>
+</div>
+</div>
+<h6 class="mt-3" data-ar="طلباتي" data-en="My Requests">My Requests</h6>
+<div id="myOTRequests"></div>
+</div>
+</div>
+
+<!-- ══════ Leaves Tab ══════ -->
+<div id="tab-leaves" class="tab-section">
+<h6 data-ar="رصيد الإجازات" data-en="Leave Balance">Leave Balance</h6>
+<div class="row g-2 mb-3" id="myBalance"></div>
+
+<h6 data-ar="طلب إجازة" data-en="Request Leave">Request Leave</h6>
+<div class="row g-2 mb-2">
+<div class="col-md-3"><select class="form-select form-select-sm" id="lvCat" onchange="checkLeaveRules()">
+<option value="annual" data-ar="سنوية" data-en="Annual">Annual</option>
+<option value="sick" data-ar="مرضية" data-en="Sick">Sick</option>
+<option value="casual" data-ar="عارضة" data-en="Casual">Casual</option>
+<option value="marriage" data-ar="زواج" data-en="Marriage">Marriage</option>
+<option value="other" data-ar="أخرى" data-en="Other">Other</option>
+<option value="deduction" data-ar="بخصم" data-en="Deduction">Deduction</option>
+</select></div>
+<div class="col-md-2"><input type="date" class="form-control form-control-sm" id="lvFrom" placeholder="From"></div>
+<div class="col-md-2"><input type="date" class="form-control form-control-sm" id="lvTo" placeholder="To"></div>
+<div class="col-md-1"><input type="number" class="form-control form-control-sm" id="lvDur" value="1" step="0.5" min="0.5" placeholder="Days"></div>
+<div class="col-md-2"><div class="form-check mt-1"><input type="checkbox" class="form-check-input" id="lvHalf"><label class="form-check-label small" data-ar="نصف يوم" data-en="Half day">Half day</label></div></div>
+<div class="col-md-2">
+<button class="btn btn-primary btn-sm" onclick="submitLeave()"><i class="bi bi-send"></i> <span data-ar="إرسال" data-en="Submit">Submit</span></button>
+<button class="btn btn-outline-secondary btn-sm" onclick="openLeaveMailto()" title="Send via Outlook"><i class="bi bi-envelope"></i></button>
+</div>
+</div>
+<div class="mb-2"><input type="text" class="form-control form-control-sm" id="lvReason" placeholder="Reason"></div>
+<div id="sickAttachBox" style="display:none" class="mb-2"><input type="file" class="form-control form-control-sm" id="lvAttach" accept=".pdf,.jpg,.png"></div>
+<div id="lvRuleMsg" class="small text-warning"></div>
+
+<h6 class="mt-3" data-ar="طلباتي" data-en="My Requests">My Requests</h6>
+<div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr>
+<th data-ar="النوع" data-en="Type">Type</th><th data-ar="من" data-en="From">From</th><th data-ar="إلى" data-en="To">To</th>
+<th data-ar="المدة" data-en="Duration">Duration</th><th data-ar="الحالة" data-en="Status">Status</th><th data-ar="بواسطة" data-en="By">By</th>
+</tr></thead><tbody id="myLvBody"></tbody></table></div>
+</div>
+
+<!-- ══════ My Tasks Tab ══════ -->
+<div id="tab-my-tasks" class="tab-section">
+<h5 data-ar="مهامي" data-en="My Tasks">My Tasks</h5>
+<div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr>
+<th data-ar="المهمة" data-en="Task">Task</th><th data-ar="بواسطة" data-en="By">By</th>
+<th data-ar="المشروع" data-en="Project">Project</th><th data-ar="الموعد" data-en="Due">Due</th>
+<th data-ar="الأولوية" data-en="Priority">Priority</th><th data-ar="الحالة" data-en="Status">Status</th>
+<th data-ar="تحديث" data-en="Update">Update</th>
+</tr></thead><tbody id="myTaskBody"></tbody></table></div>
+</div>
+
+<!-- ══════ Fingerprint Tab ══════ -->
+<div id="tab-fingerprint" class="tab-section">
+<h5 data-ar="سجل البصمة" data-en="My Fingerprint">My Fingerprint</h5>
+<div class="row g-2 mb-2">
+<div class="col-md-4"><input type="date" class="form-control form-control-sm" id="myFpFrom"></div>
+<div class="col-md-4"><input type="date" class="form-control form-control-sm" id="myFpTo"></div>
+<div class="col-md-4"><button class="btn btn-sm btn-primary" onclick="loadMyFP()"><i class="bi bi-search"></i></button></div>
+</div>
+<div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr>
+<th data-ar="التاريخ" data-en="Date">Date</th><th data-ar="الوقت" data-en="Time">Time</th><th data-ar="الحالة" data-en="Status">Status</th>
+</tr></thead><tbody id="myFpBody"></tbody></table></div>
+</div>
+<!-- ══════ Notifications Tab ══════ -->
+<div id="tab-notifications" class="tab-section">
+<h5 data-ar="الإشعارات" data-en="Notifications">Notifications</h5>
+<div id="notifList"></div>
+</div>
+
+</div><!-- main-card -->
+<div id="tab-password" class="tab-section" style="display:none;">
+
+    <h5>Change Password</h5>
+
+    <div class="card p-3" style="max-width:400px;">
+
+        <div class="mb-2">
+            <label>Old Password</label>
+            <input type="password" id="oldPass" class="form-control">
+        </div>
+
+        <div class="mb-2">
+            <label>New Password</label>
+            <input type="password" id="newPass" class="form-control">
+        </div>
+
+        <button class="btn btn-primary" onclick="changePassword()">
+            Update Password
+        </button>
+
+        <div id="passMsg" class="mt-2"></div>
+
+    </div>
+
+</div>
+
+
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════
+   ATTENDANCE SYSTEM - Employee Portal v74
+   ═══════════════════════════════════════════════════════════ */
+
+// ── Global State ──
+let currentUser=null, activeSession=null, timerInterval=null, otCheckInterval=null, breakTimerInterval=null;
+let currentLang=localStorage.getItem('lang')||'en'; // Default: English
+let OT_THRESHOLD=8*3600; // 8 hours in seconds (includes break)
+const BREAK_DURATION=60*60; // 60 minutes max break in seconds
+const MILESTONES=[
+    {s:2*3600,l:'2 hours',la:'ساعتان',f:false},
+    {s:4*3600,l:'4 hours',la:'4 ساعات',f:false},
+    {s:6*3600,l:'6 hours',la:'6 ساعات',f:false},
+    {s:8*3600,l:'8 hours (OT)',la:'8 ساعات (إضافي)',f:false}
+];
+
+async function openPasswordModal() {
+
+    // فتح المود')).show();    // فتح المودال
+
+    const oldPass = document.getElementById("oldPass").value;
+    const newPass = document.getElementById("newPass").value;
+    const confirmPass = document.getElementById("confirmPass").value;
+
+    if (!oldPass || !newPass) {
+        alert("Please fill all fields");
+        return;
+    }
+
+    if (newPass !== confirmPass) {
+        alert("Passwords do not match");
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/change-password", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                old_password: oldPass,
+                new_password: newPass
+            })
+        });
+
+        const data = await res.json();
+
+        alert(data.message || data.error);
+
+    } catch (err) {
+        console.error(err);
+        alert("Server error");
+    }
+}
+async function submitPasswordChange() {
+
+    const oldPass = document.getElementById("oldPass").value;
+    const newPass = document.getElementById("newPass").value;
+    const confirmPass = document.getElementById("confirmPass").value;
+
+    if (!oldPass || !newPass) {
+        alert("Please fill all fields");
+        return;
+    }
+
+    if (newPass !== confirmPass) {
+        alert("Passwords do not match");
+        return;
+    }
+
+    const res = await fetch("/api/change-password", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            old_password: oldPass,
+            new_password: newPass
+        })
+    });
+
+    const data = await res.json();
+    alert(data.message || data.error);
+}
+
+
+// ── Language Toggle ──
+function toggleLang(){
+    currentLang=currentLang==='ar'?'en':'ar';
+    localStorage.setItem('lang',currentLang);
+    document.documentElement.lang=currentLang;
+    document.documentElement.dir=currentLang==='ar'?'rtl':'ltr';
+    // Switch Bootstrap CSS
+    const bsLink=document.querySelector('link[href*="bootstrap"]');
+    if(bsLink){
+        if(currentLang==='ar') bsLink.href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css';
+        else bsLink.href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css';
+    }
+    document.getElementById('langBtn').textContent=currentLang==='ar'?'English':'العربية';
+    document.querySelectorAll('[data-ar]').forEach(el=>{el.textContent=el.getAttribute('data-'+currentLang)||el.textContent;});
+}
+
+// ── Tabs ──
+function showTab(name){
+    document.querySelectorAll('.tab-section').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('#mainTabs .nav-link').forEach(l=>l.classList.remove('active'));
+    const tab=document.getElementById('tab-'+name);if(tab)tab.classList.add('active');
+    const link=document.querySelector(`[data-tab="${name}"]`);if(link)link.classList.add('active');
+    if(name==='timesheet' || name==='attendance'){loadProjects();checkActiveSession();}
+    else if(name==='leaves'){loadMyLeaves();loadMyBalance();}
+    else if(name==='my-tasks')loadMyTasks();
+    else if(name==='fingerprint')loadMyFP();
+    else if(name==='notifications')loadNotifs();
+}
+function showSubTab(name){
+    document.querySelectorAll('.sub-section').forEach(s=>s.classList.add('d-none'));
+    document.querySelectorAll('[data-sub]').forEach(l=>l.classList.remove('active'));
+    const sub=document.getElementById('sub-'+name);if(sub)sub.classList.remove('d-none');
+    const link=document.querySelector(`[data-sub="${name}"]`);if(link)link.classList.add('active');
+    if(name==='history')loadHistory();
+    else if(name==='ot-request')loadMyOTRequests();
+}
+
+// ── API Helper ──
+async function api(url,method='GET',body=null){
+    const opts={method,headers:{'Content-Type':'application/json'}};
+    if(body)opts.body=JSON.stringify(body);
+    try{const r=await fetch(url,opts);return await r.json();}
+    catch(e){console.error('API error:',e);return {error:'Network error'};}
+}
+
+// ── Sound System ──
+function playSound(freqs,dur=0.35){
+    try{const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    freqs.forEach((f,i)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
+    o.frequency.value=f;g.gain.setValueAtTime(0.5,ctx.currentTime+i*dur*1.2);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+i*dur*1.2+dur);
+    o.start(ctx.currentTime+i*dur*1.2);o.stop(ctx.currentTime+i*dur*1.2+dur);});}catch(e){}
+}
+function playReminder(){playSound([520,660]);}
+function playHalfDay(){playSound([600,680,760]);}
+function playOTSound(){playSound([880,660,440],0.4);}
+function playBreakSound(){playSound([440,550,660],0.3);}
+
+// ── Scheduled Sound Notifications (10:00, 12:30, 13:30, 17:00) ──
+let lastNotifMinute='';
+function checkScheduledNotifications(){
+    const now=new Date();
+    const hh=now.getHours().toString().padStart(2,'0');
+    const mm=now.getMinutes().toString().padStart(2,'0');
+    const key=hh+':'+mm;
+    if(key===lastNotifMinute) return; // already fired this minute
+    lastNotifMinute=key;
+    if(key==='10:00'){
+        playReminder();
+        showToast(currentLang==='ar'?'تذكير: وقت بدء العمل!':'Reminder: Time to start work!','#2980b9');
+    } else if(key==='12:30'){
+        // MANDATORY BREAK: Auto-start break at 12:30
+        playBreakSound();
+        showToast(currentLang==='ar'?'بريك إجباري! 12:30 - 13:30':'Mandatory Break! 12:30 - 13:30','#e67e22');
+        autoStartBreak();
+    } else if(key==='13:30'){
+        playReminder();
+        showToast(currentLang==='ar'?'انتهى البريك! عد للعمل':'Break over! Back to work','#27ae60');
+        // Note: Break is NOT auto-ended - employee must end it manually
+    } else if(key==='17:00'){
+        playOTSound();
+        showToast(currentLang==='ar'?'تذكير: وقت الانتهاء!':'Reminder: End of work day!','#e74c3c');
+    }
+}
+// Check every 30 seconds
+setInterval(checkScheduledNotifications,30000);
+
+function showToast(msg,color='#333'){
+    const old=document.getElementById('toastC');if(old)old.remove();
+    const t=document.createElement('div');t.id='toastC';t.className='toast-custom';t.style.background=color;t.textContent=msg;
+    document.body.appendChild(t);setTimeout(()=>{if(t.parentNode)t.remove();},6000);
+}
+
+function checkMilestones(sec){
+    MILESTONES.forEach(m=>{if(!m.f&&sec>=m.s){m.f=true;
+    if(m.s===8*3600){playOTSound();showToast(currentLang==='ar'?'وصلت إلى 8 ساعات! OVERTIME':m.l,'#e67e22');}
+    else if(m.s===4*3600){playHalfDay();showToast(currentLang==='ar'?'مضى نصف يوم العمل':'Half day passed','#27ae60');}
+    else{playReminder();showToast(`${currentLang==='ar'?'تذكير: مضى':'Reminder:'} ${currentLang==='ar'?m.la:m.l}`,'#2980b9');}
+    }});
+}
+function resetMilestones(){MILESTONES.forEach(m=>m.f=false);}
+
+document.addEventListener('DOMContentLoaded', async () => {
+
+  // ✅ Apply saved language
+  if (currentLang === 'ar') {
+    toggleLang();
+  } else {
+    document.documentElement.lang = 'en';
+    document.documentElement.dir = 'ltr';
+    document.getElementById('langBtn').textContent = 'العربية';
+  }
+
+  try {
+    // ✅ Session check (مرة واحدة فقط)
+    const d = await api('/api/current_user');
+
+    if (!d.user) {
+      location.replace('/login');
+      return;
+    }
+
+    currentUser = d.user;
+
+    // ✅ Header info
+    document.getElementById('welcomeMsg').textContent =
+      'Welcome, ' + currentUser.name;
+
+    document.getElementById('userRoleText').textContent =
+      currentUser.role || currentUser.position || '';
+
+    if (
+      currentUser.is_admin ||
+      ['admin', 'hr', 'planning'].includes(currentUser.role)
+    ) {
+      document.getElementById('adminBtn').classList.remove('d-none');
+    }
+
+    // ✅ Initialize UI مرة واحدة
+    showTab('attendance');
+    await checkActiveBreak();
+
+    // ✅ OT checker
+    otCheckInterval = setInterval(checkOT, 60000);
+
+    // ✅ Optional notification
+    if (typeof checkUpcomingAnnualLeave === 'function') {
+      checkUpcomingAnnualLeave();
+    }
+
+  } catch (e) {
+    console.error(e);
+    location.replace('/login');
+  }
+});
+async function logout(){
+    clearInterval(otCheckInterval);
+    clearInterval(breakTimerInterval);
+    try{await fetch('/api/logout',{method:'POST'});location.href='/login';}
+    catch(e){location.href='/login';}
+}
+
+// Attendance Check In/Out removed - tracked via sessions
+
+// ── Timer & Progress ──
+// Timer now uses server-provided start_time (UTC with Z suffix) for accurate display
+function startTimer(startTimeISO){
+    if(timerInterval)clearInterval(timerInterval);
+    const box=document.getElementById('timerBox');
+    const startMs = new Date(startTimeISO).getTime(); // Correctly parses UTC with Z
+    timerInterval=setInterval(()=>{
+        const d=Date.now()-startMs;
+        const h=Math.floor(d/3600000).toString().padStart(2,'0');
+        const m=Math.floor((d%3600000)/60000).toString().padStart(2,'0');
+        const s=Math.floor((d%60000)/1000).toString().padStart(2,'0');
+        box.textContent=`${h}:${m}:${s}`;
+    },1000);
+}
+// Start timer using elapsed_seconds from server (for resumed sessions after break)
+function startTimerFromElapsed(elapsedSec){
+    if(timerInterval)clearInterval(timerInterval);
+    const box=document.getElementById('timerBox');
+    const baseMs = Date.now() - (elapsedSec * 1000);
+    timerInterval=setInterval(()=>{
+        const d=Date.now()-baseMs;
+        const h=Math.floor(d/3600000).toString().padStart(2,'0');
+        const m=Math.floor((d%3600000)/60000).toString().padStart(2,'0');
+        const s=Math.floor((d%60000)/1000).toString().padStart(2,'0');
+        box.textContent=`${h}:${m}:${s}`;
+    },1000);
+}
+function stopTimer(){clearInterval(timerInterval);document.getElementById('timerBox').textContent='00:00:00';document.getElementById('timerBox').classList.remove('overtime');document.getElementById('otAlertBox').classList.add('d-none');}
+
+function updateProgress(sec,threshold){
+    const limit=threshold||OT_THRESHOLD;
+    const pct=Math.min((sec/limit)*100,100);
+    const fill=document.getElementById('progressFill');
+    const info=document.getElementById('hoursInfo');
+    const h=Math.floor(sec/3600).toString().padStart(2,'0');
+    const m=Math.floor((sec%3600)/60).toString().padStart(2,'0');
+    const s2=Math.floor(sec%60).toString().padStart(2,'0');
+    const lh=Math.floor(limit/3600).toString().padStart(2,'0');
+    const lm=Math.floor((limit%3600)/60).toString().padStart(2,'0');
+    fill.style.width=pct+'%';
+    info.textContent=`${currentLang==='ar'?'إجمالي اليوم':'Today'}: ${h}:${m}:${s2} / ${lh}:${lm}:00`;
+    if(sec>=limit){fill.classList.add('ot');info.style.color='#856404';info.style.fontWeight='bold';}
+    else{fill.classList.remove('ot');info.style.color='';info.style.fontWeight='';}
+    checkMilestones(sec);
+}
+
+// ── Session Management ──
+async function checkActiveSession(){
+    try{
+    const d=await api('/api/timesheet/active_session');
+    if(d.overtime_threshold)OT_THRESHOLD=d.overtime_threshold;
+    updateProgress(d.today_total_seconds||0,d.overtime_threshold);
+    
+    // Check if on break - if so, show break UI but keep session info
+    const brkData=await api('/api/timesheet/break/active');
+    const onBreak=brkData && brkData.active_break;
+    
+    if(d.active_session){
+        activeSession=d.active_session;
+        // Use start_time with Z suffix (UTC) for correct timer
+        startTimer(activeSession.start_time);
+        document.getElementById('tsForm').classList.add('d-none');
+        document.getElementById('endBtn').classList.remove('d-none');
+        document.getElementById('breakStartBtn').classList.remove('d-none');
+        showSessionInfo(activeSession);
+        if(activeSession.hour_type==='OVERTIME'||d.overtime_reached){
+            document.getElementById('otAlertBox').classList.remove('d-none');
+            document.getElementById('timerBox').classList.add('overtime');
+        }
+    }else if(onBreak){
+        // Session paused during break - show break UI, hide session form
+        stopTimer();
+        document.getElementById('timerBox').textContent='ON BREAK';
+        document.getElementById('tsForm').classList.add('d-none');
+        document.getElementById('endBtn').classList.add('d-none');
+        document.getElementById('breakStartBtn').classList.add('d-none');
+        document.getElementById('breakEndBtn').classList.remove('d-none');
+        document.getElementById('breakTimer').classList.remove('d-none');
+        startBreakTimer(new Date(brkData.active_break.start_time));
+    }else{
+        stopTimer();activeSession=null;
+        document.getElementById('tsForm').classList.remove('d-none');
+        document.getElementById('endBtn').classList.add('d-none');
+        document.getElementById('sessionInfoCard').classList.add('d-none');
+        // Break button stays visible - employee can take break anytime
+    }
+    }catch(e){console.error('checkActiveSession error:',e);}
+}
+
+function showSessionInfo(s){
+    const c=document.getElementById('sessionInfoCard');c.classList.remove('d-none');
+    c.classList.toggle('ot',s.hour_type==='OVERTIME');
+    document.getElementById('siType').textContent=s.hour_type||'-';
+    // Show project name (not ID) and project number
+    const projDisplay = s.project_name && s.project_name!=='-' ? 
+        (s.project_number ? s.project_number+' - '+s.project_name : s.project_name) : 
+        (s.hour_type||'-'); // For non-project types, show type name
+    document.getElementById('siProj').textContent=projDisplay;
+    document.getElementById('siJob').textContent=s.job_no||'-';
+    document.getElementById('siTask').textContent=s.task_name||'-';
+    // Always show description row
+    if(s.description){
+        document.getElementById('siDescRow').classList.remove('d-none');
+        document.getElementById('siDesc').textContent=s.description;
+    } else {
+        document.getElementById('siDescRow').classList.add('d-none');
+    }
+}
+
+async function checkOT(){
+    if(!activeSession)return;
+    try{const d=await api('/api/timesheet/check_overtime','POST');
+    if(d.switched){activeSession=d.new_session;showSessionInfo(d.new_session);document.getElementById('otAlertBox').classList.remove('d-none');document.getElementById('timerBox').classList.add('overtime');playOTSound();await checkActiveSession();}
+    else if(d.today_total_seconds!==undefined)updateProgress(d.today_total_seconds,d.overtime_threshold);
+    }catch(e){}
+}
+
+// Toggle form fields based on hour type
+function toggleFields(){
+    const ht=document.getElementById('hourType').value;
+    const showProj=ht==='WORK ORDER'||ht==='OVERTIME';
+    const showDesc=ht==='TRAINING'||ht==='MEETING'||ht==='IDLE'||ht==='VACATION';
+    document.getElementById('projFields').classList.toggle('d-none',!showProj);
+    document.getElementById('descFields').classList.toggle('d-none',!showDesc);
+    if(showProj&&!document.getElementById('projSel').options.length>1)loadProjects();
+}
+
+// Start session
+async function startSession(){
+    const ht=document.getElementById('hourType').value;
+    if(!ht){showMsg('sessMsg','danger',currentLang==='ar'?'اختر نوع الجلسة':'Select session type');return;}
+    let body={hour_type:ht};
+    if(ht==='WORK ORDER'||ht==='OVERTIME'){
+        body.project_id=document.getElementById('projSel').value;
+        body.job_no=document.getElementById('jobSel').value;
+        body.task_name=document.getElementById('taskInput').value;
+        body.description=document.getElementById('descInputProj')?.value||''; // Project description field
+        if(ht==='WORK ORDER'&&(!body.project_id||!body.task_name)){
+            showMsg('sessMsg','danger',currentLang==='ar'?'الرجاء ملء الحقول المطلوبة':'Please fill required fields');return;
+        }
+    } else {
+        // For TRAINING/MEETING/IDLE/VACATION - description only, project/job show as type name
+        body.description=document.getElementById('descInput')?.value||'';
+    }
+    // Get geolocation if available
+    if (navigator.geolocation) {
+        try {
+            const pos = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {timeout:5000, enableHighAccuracy:true});
+            });
+            body.latitude = pos.coords.latitude;
+            body.longitude = pos.coords.longitude;
+        } catch(e) { console.log('Geolocation not available:', e.message); }
+    }
+    const d=await api('/api/timesheet/session/start','POST',body);
+    if(d.success){
+        activeSession=d.session;resetMilestones();
+        startTimer(activeSession.start_time); // start_time now includes Z suffix (UTC)
+        document.getElementById('tsForm').classList.add('d-none');
+        document.getElementById('endBtn').classList.remove('d-none');
+        document.getElementById('breakStartBtn').classList.remove('d-none');
+        showSessionInfo(activeSession);
+        if(d.overtime_auto_switched){playOTSound();document.getElementById('otAlertBox').classList.remove('d-none');document.getElementById('timerBox').classList.add('overtime');}
+        updateProgress(d.today_total_seconds||0);
+        showMsg('sessMsg','success',currentLang==='ar'?'تم بدء الجلسة':'Session started');
+        startAutoClockoutCheck(); // Start checking for 18:00 auto clock-out
+    } else showMsg('sessMsg','danger',d.error||'Error');
+}
+
+async function endSession(){
+    const d=await api('/api/timesheet/session/end','POST');
+    if(d){stopTimer();activeSession=null;
+    document.getElementById('hourType').value='';
+    document.getElementById('tsForm').classList.remove('d-none');
+    document.getElementById('endBtn').classList.add('d-none');
+    document.getElementById('sessionInfoCard').classList.add('d-none');
+    toggleFields();
+    showMsg('sessMsg','success',currentLang==='ar'?'تم إنهاء الجلسة':'Session ended');
+    await checkActiveSession();}
+}
+
+// ── Break Management ──
+async function startBreak(){
+    const d=await api('/api/timesheet/break/start','POST');
+    if(d.success){
+        playBreakSound();
+        showToast(currentLang==='ar'?'تم بدء فترة الراحة':'Break started - session paused','#e67e22');
+        // Stop session timer and show ON BREAK
+        stopTimer();
+        document.getElementById('timerBox').textContent='ON BREAK';
+        document.getElementById('endBtn').classList.add('d-none'); // Hide end session during break
+        document.getElementById('breakStartBtn').classList.add('d-none'); // Hide start break, show end break
+        document.getElementById('breakEndBtn').classList.remove('d-none');
+        document.getElementById('breakTimer').classList.remove('d-none');
+        startBreakTimer(new Date(d.start_time));
+    }else showToast(d.error||'Error','#e74c3c');
+}
+
+async function endBreak(){
+    const d=await api('/api/timesheet/break/end','POST');
+    if(d.success){
+        playReminder();
+        showToast(`${currentLang==='ar'?'انتهت فترة الراحة':'Break ended'} (${d.duration_minutes} ${currentLang==='ar'?'دقيقة':'min'})`,'#27ae60');
+        document.getElementById('breakEndBtn').classList.add('d-none');
+        document.getElementById('breakStartBtn').classList.remove('d-none'); // Show start break again
+        document.getElementById('breakTimer').classList.add('d-none');
+        clearInterval(breakTimerInterval);
+        // Refresh session state - session should be resumed by backend
+        await checkActiveSession();
+    }else showToast(d.error||'Error','#e74c3c');
+}
+
+function startBreakTimer(startTime){
+    clearInterval(breakTimerInterval);
+    breakTimerInterval=setInterval(()=>{
+        const elapsed=Math.floor((Date.now()-startTime)/1000);
+        const remaining=Math.max(BREAK_DURATION-elapsed,0);
+        // Elapsed display
+        const em=Math.floor(elapsed/60).toString().padStart(2,'0');
+        const es=Math.floor(elapsed%60).toString().padStart(2,'0');
+        const el=document.getElementById('breakTimerDisplay');
+        if(el)el.textContent=`${em}:${es}`;
+        // Remaining display
+        const rm=Math.floor(remaining/60).toString().padStart(2,'0');
+        const rs=Math.floor(remaining%60).toString().padStart(2,'0');
+        const rl=document.getElementById('breakRemaining');
+        if(rl)rl.textContent=`${currentLang==='ar'?'متبقي':'Remaining'}: ${rm}:${rs}`;
+        // Warning when 5 min left
+        if(remaining===300){playReminder();showToast(currentLang==='ar'?'5 دقائق متبقية من البريك':'5 minutes left on break','#e67e22');}
+        // Expired
+        if(remaining<=0){
+            if(rl)rl.textContent=currentLang==='ar'?'انتهى وقت البريك!':'Break time expired!';
+            rl.style.color='#e74c3c';
+        }
+    },1000);
+}
+
+async function checkActiveBreak(){
+    try{
+        const d=await api('/api/timesheet/break/active');
+        if(d.active_break){
+            // Stop session timer during break
+            stopTimer();
+            document.getElementById('timerBox').textContent='ON BREAK';
+            document.getElementById('breakStartBtn').classList.add('d-none');
+            document.getElementById('breakEndBtn').classList.remove('d-none');
+            document.getElementById('breakTimer').classList.remove('d-none');
+            document.getElementById('endBtn').classList.add('d-none');
+            startBreakTimer(new Date(d.active_break.start_time));
+        }
+    }catch(e){}
+}
+
+// Auto-start mandatory break at 12:30 (only if not already on break)
+async function autoStartBreak(){
+    try{
+        const brkData=await api('/api/timesheet/break/active');
+        if(brkData && brkData.active_break) return; // Already on break
+        // Start break automatically
+        await startBreak();
+    }catch(e){console.error('autoStartBreak error:',e);}
+}
+
+// ── Projects & Jobs ──
+async function loadProjects(){
+    try{
+    const d=await api('/api/projects');const projs=d.projects||[];
+    const projSel=document.getElementById('projSel');
+    if(projSel)projSel.innerHTML='<option value="">-- Project --</option>'+projs.map(p=>`<option value="${p.id}">${p.project_number||''} - ${p.project_name}</option>`).join('');
+    const histProj=document.getElementById('histProj');
+    if(histProj)histProj.innerHTML='<option value="">All Projects</option>'+projs.map(p=>`<option value="${p.id}">${p.project_name}</option>`).join('');
+    const histProjNum=document.getElementById('histProjNum');
+    if(histProjNum){
+        const nums=[...new Set(projs.map(p=>p.project_number).filter(Boolean))];
+        histProjNum.innerHTML='<option value="">All Proj No</option>'+nums.map(n=>`<option value="${n}">${n}</option>`).join('');
+    }
+    }catch(e){}
+}
+
+async function loadJobs(){
+    const pid=document.getElementById('projSel').value;const s=document.getElementById('jobSel');
+    s.innerHTML='<option value="">-- Job --</option>';if(!pid)return;
+    try {
+        const d=await api(`/api/projects/${pid}/jobs`);
+        if(d.jobs && d.jobs.length > 0) {
+            d.jobs.forEach(j=>{
+                const opt = document.createElement('option');
+                opt.value = j.job_number;
+                opt.textContent = j.job_number + (j.description ? ' - ' + j.description : '');
+                s.appendChild(opt);
+            });
+        }
+    } catch(e) { console.error('Error loading jobs:', e); }
+}
+
+// ── History ──
+async function loadHistory(){
+    const pid=document.getElementById('histProj').value;
+    const pnum=document.getElementById('histProjNum')?.value||'';
+    const job=document.getElementById('histJob')?.value||'';
+    const htype=document.getElementById('histType')?.value||'';
+    const hfrom=document.getElementById('histFrom')?.value||'';
+    const hto=document.getElementById('histTo')?.value||'';
+    let url='/api/timesheet/sessions?';
+    if(pid)url+=`project_id=${pid}&`;
+    if(pnum)url+=`project_number=${encodeURIComponent(pnum)}&`;
+    if(job)url+=`job_no=${encodeURIComponent(job)}&`;
+    if(htype)url+=`hour_type=${encodeURIComponent(htype)}&`;
+    if(hfrom)url+=`start_date=${hfrom}&`;
+    if(hto)url+=`end_date=${hto}&`;
+    const d=await api(url);const sessions=d.sessions||[];
+    let html='';
+    sessions.forEach(s=>{
+        const isOT=s.hour_type==='OVERTIME';
+        let approval='-';
+        if(isOT&&s.overtime_approval_status){
+            if(s.overtime_approval_status==='pending')approval='<span class="badge bg-warning">Pending</span>';
+            else if(s.overtime_approval_status==='approved')approval='<span class="badge bg-success">Approved</span>';
+            else approval='<span class="badge bg-danger">Rejected</span>';
+        }
+        html+=`<tr class="${isOT?'table-warning':''}"><td>${s.date?new Date(s.date).toLocaleDateString():'-'}</td>
+        <td>${s.project_number||'-'}</td><td>${s.project_name||'-'}</td><td>${s.job_no||'-'}</td>
+        <td>${s.task_name||'-'}</td><td style="max-width:120px;overflow:hidden">${s.description||'-'}</td>
+        <td>${isOT?'<span class="ot-badge">OT</span> ':''} ${s.hour_type||'-'}</td><td>${approval}</td><td><strong>${s.total_time||'Running'}</strong></td></tr>`;
+    });
+    document.getElementById('histBody').innerHTML=html||`<tr><td colspan="9" class="text-center text-muted">${currentLang==='ar'?'لا توجد بيانات':'No data'}</td></tr>`;
+}
+
+// ── OT Requests ──
+async function submitOTRequest(){
+    const date=document.getElementById('otDate').value;const reason=document.getElementById('otReason').value;
+    if(!date){showToast(currentLang==='ar'?'اختر التاريخ':'Select date','#e74c3c');return;}
+    const d=await api('/api/overtime-requests','POST',{request_date:date,reason});
+    if(d.error)showToast(d.error,'#e74c3c');else{showToast(currentLang==='ar'?'تم إرسال الطلب':'Request sent','#27ae60');loadMyOTRequests();}
+}
+
+function openOTMailto(){
+    if(!currentUser)return;
+    const date=document.getElementById('otDate').value||'';
+    const reason=document.getElementById('otReason').value||'';
+    api(`/api/employees/${currentUser.id}/managers`).then(d=>{
+        const mgrs=(d.managers||[]).map(m=>m.email).filter(Boolean).join(',');
+        const subject=encodeURIComponent(`Overtime Request - ${currentUser.name} - ${date}`);
+        const body=encodeURIComponent(`Dear Sir/Madam,\n\nI would like to request overtime approval:\n\nDate: ${date}\nReason: ${reason}\n\nBest regards,\n${currentUser.name}`);
+        window.location.href=`mailto:${mgrs}?subject=${subject}&body=${body}`;
+    });
+}
+
+async function loadMyOTRequests(){
+    const d=await api('/api/overtime-requests?my=true');const reqs=d.overtime_requests||[];
+    let html='';
+    reqs.forEach(r=>{
+        const sb=r.status==='pending'?'<span class="badge bg-warning">Pending</span>':r.status==='approved'?'<span class="badge bg-success">Approved</span>':'<span class="badge bg-danger">Rejected</span>';
+        html+=`<div class="card mb-2"><div class="card-body py-2"><div class="d-flex justify-content-between"><span>${r.request_date} ${sb}</span><span>OT: ${r.total_overtime_hours||'-'}</span></div>
+        ${r.reason?`<small class="text-muted">${r.reason}</small>`:''}
+        ${r.approved_by_name&&r.approved_by_name!=='-'?`<br><small>By: ${r.approved_by_name}</small>`:''}
+        ${r.rejection_note?`<br><small class="text-danger">Rejection: ${r.rejection_note}</small>`:''}</div></div>`;
+    });
+    document.getElementById('myOTRequests').innerHTML=html||`<p class="text-muted small">${currentLang==='ar'?'لا توجد طلبات':'No requests'}</p>`;
+}
+
+// ── Leaves ──
+function checkLeaveRules() {
+    const cat = document.getElementById('lvCat').value;
+    document.getElementById('sickAttachBox').style.display =
+        cat === 'sick' ? 'block' : 'none';
+
+    const msg = document.getElementById('lvRuleMsg');
+    if (cat === 'annual') {
+        msg.textContent =
+            currentLang === 'ar'
+                ? 'الإجازة السنوية يجب تقديمها قبل يوم'
+                : 'Annual leave must be submitted 1 day in advance';
+    } else {
+        msg.textContent = '';
+    }
+}
+
+async function submitLeave() {
+    const cat = document.getElementById('lvCat').value;
+    const from = document.getElementById('lvFrom').value;
+    const to = document.getElementById('lvTo').value;
+    const dur = document.getElementById('lvDur').value;
+    const half = document.getElementById('lvHalf').checked;
+    const reason = document.getElementById('lvReason').value;
+
+    if (!from) {
+        showToast(
+            currentLang === 'ar'
+                ? 'اختر تاريخ البداية'
+                : 'Select start date',
+            '#e74c3c'
+        );
+        return;
+    }
+
+    // ✅ FIX: Annual leave rule (compare dates only, no time)
+    if (cat === 'annual') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const fromDate = new Date(from);
+        fromDate.setHours(0, 0, 0, 0);
+
+        const diffDays =
+            (fromDate - today) / (1000 * 60 * 60 * 24);
+
+        if (diffDays < 1) {
+            showToast(
+                currentLang === 'ar'
+                    ? 'الإجازة السنوية يجب تقديمها قبل يوم'
+                    : 'Annual leave must be submitted at least 1 day in advance',
+                '#e74c3c'
+            );
+            return;
+        }
+    }
+
+    const body = {
+        leave_category: cat,
+        start_date: from,
+        end_date: to || from,
+        duration_days: parseFloat(dur),
+        is_half_day: half,
+        reason
+    };
+
+    if (cat === 'sick') {
+        const file = document.getElementById('lvAttach').files[0];
+        if (file) {
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('duration_days', dur);
+            const up = await fetch('/api/upload-attachment', {
+                method: 'POST',
+                body: fd
+            });
+            const ud = await up.json();
+            if (ud.path) body.attachment_path = ud.path;
+        }
+    }
+
+    const d = await api('/api/leave-requests', 'POST', body);
+    if (d.error) {
+        showToast(d.error, '#e74c3c');
+    } else {
+        showToast(
+            currentLang === 'ar'
+                ? 'تم إرسال الطلب'
+                : 'Request sent',
+            '#27ae60'
+        );
+        loadMyLeaves();
+        loadMyBalance();
+    }
+}
+
+function openLeaveMailto() {
+    if (!currentUser) return;
+
+    const cat = document.getElementById('lvCat').value;
+    const from = document.getElementById('lvFrom').value;
+    const to = document.getElementById('lvTo').value;
+    const reason = document.getElementById('lvReason').value;
+
+    const catNames = { annual: 'Annual', sick: 'Sick', casual: 'Casual', marriage: 'Marriage', other: 'Other', deduction: 'Deduction' };
+
+    api(`/api/employees/${currentUser.id}/managers`).then(d => {
+        const mgrs = (d.managers || [])
+            .map(m => m.email)
+            .filter(Boolean)
+            .join(',');
+
+        const subject = encodeURIComponent(
+            `Leave Request (${catNames[cat] || cat}) - ${currentUser.name} - Time Sheet AFCO`
+        );
+
+        const body = encodeURIComponent(
+            `Dear Sir/Madam,
+
+I would like to request ${catNames[cat] || cat} leave:
+
+From: ${from}
+To: ${to || from}
+Reason: ${reason}
+
+Best regards,
+${currentUser.name}`
+        );
+
+        window.location.href = `mailto:${mgrs}?subject=${subject}&body=${body}`;
+    });
+}
+
+async function loadMyLeaves() {
+    const d = await api('/api/leave-requests?my=true');
+    const leaves = d.leave_requests || [];
+    const catNames = { annual: 'Annual', sick: 'Sick', casual: 'Casual', marriage: 'Marriage', other: 'Other', deduction: 'Deduction' };
+
+    let html = '';
+    leaves.forEach(l => {
+        const sb =
+            l.status === 'pending'
+                ? '<span class="badge bg-warning">Pending</span>'
+                : l.status === 'approved'
+                ? '<span class="badge bg-success">Approved</span>'
+                : '<span class="badge bg-danger">Rejected</span>';
+
+        html += `
+        <tr>
+          <td>${catNames[l.leave_category] || l.leave_category}</td>
+          <td>${l.start_date}</td>
+          <td>${l.end_date}</td>
+          <td>${l.duration_days}${l.is_half_day ? ' (Half)' : ''}</td>
+          <td>${sb}</td>
+          <td>${l.approved_by_name || '-'}</td>
+        </tr>`;
+    });
+
+    document.getElementById('myLvBody').innerHTML =
+        html ||
+        `<tr>
+           <td colspan="6" class="text-center text-muted">
+             ${currentLang === 'ar' ? 'لا توجد طلبات' : 'No requests'}
+           </td>
+         </tr>`;
+}
+
+async function loadMyBalance() {
+    if (!currentUser) return;
+
+    try {
+        const d = await api(`/api/leave-balance/${currentUser.id}`);
+        const box = document.getElementById('myBalance');
+
+        const items = [
+            { name: 'Annual', na: 'سنوية', data: d.annual, color: 'primary' },
+            { name: 'Sick', na: 'مرضية', data: d.sick, color: 'warning' },
+            { name: 'Casual', na: 'عارضة', data: d.casual, color: 'info' },
+            { name: 'Marriage', na: 'زواج', data: d.marriage || {total:0,used:0,remaining:0}, color: 'success' },
+            { name: 'Other', na: 'أخرى', data: d.other || {total:0,used:0,remaining:0}, color: 'secondary' },
+            { name: 'Deduction', na: 'بخصم', data: d.deduction || {total:0,used:0,remaining:0}, color: 'danger' }
+        ];
+
+        box.innerHTML = items
+            .map(
+                i => `
+        <div class="col-md-4">
+          <div class="card border-${i.color}">
+            <div class="card-body text-center py-2">
+              <h6 class="text-${i.color}">
+                ${currentLang === 'ar' ? i.na : i.name}
+              </h6>
+              <div class="d-flex justify-content-around small">
+                <span>Total: ${i.data.total}</span>
+                <span>Used: ${i.data.used}</span>
+                <span class="fw-bold">Left: ${i.data.remaining}</span>
+              </div>
+            </div>
+          </div>
+        </div>`
+            )
+            .join('');
+    } catch (e) {}
+}
+async function changePassword() {
+
+    const oldPass = document.getElementById('oldPass').value;
+    const newPass = document.getElementById('newPass').value;
+
+    const res = await api('/api/admin/change-password', 'POST', {
+        old_password: oldPass,
+        new_password: newPass
+    });
+
+    document.getElementById('passMsg').innerText =
+        res.message || res.error || "Done";
+}
+
+
+// ── My Tasks ──
+async function loadMyTasks(){
+    const d=await api('/api/tasks?my=true');const tasks=d.tasks||[];
+    const priMap={urgent:'Urgent',high:'High',medium:'Medium',low:'Low'};
+    const priClass={urgent:'text-danger fw-bold',high:'text-warning',medium:'text-primary',low:'text-success'};
+    const statMap={new:'New','in_progress':'In Progress',completed:'Completed'};
+    let html='';
+    tasks.forEach(t=>{
+        html+=`<tr><td>${t.title}<br><small class="text-muted">${t.description||''}</small></td><td>${t.assigned_by_name}</td>
+        <td>${t.project_name||'-'}</td><td>${t.due_date||'-'}</td>
+        <td class="${priClass[t.priority]||''}">${priMap[t.priority]||t.priority}</td>
+        <td><span class="badge bg-${t.status==='completed'?'success':t.status==='in_progress'?'primary':'secondary'}">${statMap[t.status]||t.status}</span></td>
+        <td><select class="form-select form-select-sm" style="width:110px" onchange="updMyTask(${t.id},this.value)">
+        <option value="new" ${t.status==='new'?'selected':''}>New</option>
+        <option value="in_progress" ${t.status==='in_progress'?'selected':''}>In Progress</option>
+        <option value="completed" ${t.status==='completed'?'selected':''}>Completed</option>
+        </select></td></tr>`;
+    });
+    document.getElementById('myTaskBody').innerHTML=html||`<tr><td colspan="7" class="text-center text-muted">No tasks</td></tr>`;
+}
+async function updMyTask(id,status){await api(`/api/tasks/${id}`,'PUT',{status});showToast('Updated','#27ae60');}
+
+// ── Fingerprint ──
+async function loadMyFP(){
+    if(!currentUser)return;
+    const from=document.getElementById('myFpFrom').value;const to=document.getElementById('myFpTo').value;
+    let url=`/api/fingerprint/attendance?employee_id=${currentUser.id}`;
+    if(from)url+=`&from_date=${from}`;if(to)url+=`&to_date=${to}`;
+    const d=await api(url);const recs=d.records||[];
+    let html='';recs.forEach(r=>{html+=`<tr><td>${r.date}</td><td>${r.time}</td><td>${r.status}</td></tr>`;});
+    document.getElementById('myFpBody').innerHTML=html||`<tr><td colspan="3" class="text-center text-muted">No data</td></tr>`;
+}
+
+// ── Notifications ──
+async function loadNotifs(){
+    try{const d=await api('/api/notifications');const notifs=d.notifications||[];
+    let html='';notifs.forEach(n=>{
+        html+=`<div class="card mb-2 ${n.is_read?'':'border-primary'}"><div class="card-body py-2">
+        <div class="d-flex justify-content-between"><small class="text-muted">${n.created_at}</small>
+        ${!n.is_read?'<span class="badge bg-primary">New</span>':''}</div>
+        <p class="mb-0 small">${n.message}</p></div></div>`;
+    });
+    document.getElementById('notifList').innerHTML=html||`<p class="text-muted">No notifications</p>`;
+    if(notifs.some(n=>!n.is_read))api('/api/notifications/read','POST');
+    }catch(e){}
+}
+
+// ── Utility ──
+function showMsg(id,type,msg){
+    const el=document.getElementById(id);if(!el)return;
+    el.classList.remove('d-none');
+    el.className=`alert alert-${type} mt-2`;el.textContent=msg;
+    setTimeout(()=>el.classList.add('d-none'),5000);
+}
+
+// ── Auto Clock-out at 18:00 ──
+let autoClockoutTimer = null;
+function startAutoClockoutCheck() {
+    if (autoClockoutTimer) clearInterval(autoClockoutTimer);
+    autoClockoutTimer = setInterval(async () => {
+        const now = new Date();
+        const h = now.getHours();
+        const m = now.getMinutes();
+        // Auto clock-out at 18:00
+        if (h >= 18 && activeSession) {
+            playNotifSound(); // Alert sound
+            showMsg('sessMsg', 'warning', 'Auto clock-out at 18:00. Session ended automatically.');
+            await endSession();
+            clearInterval(autoClockoutTimer);
+            autoClockoutTimer = null;
+        }
+    }, 30000); // Check every 30 seconds
+}
+
+// ── Geolocation Display ──
+function showLocation(lat, lng) {
+    if (!lat || !lng) return '';
+    return `<a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" class="badge bg-light text-primary"><i class="bi bi-geo-alt"></i> ${lat.toFixed(4)}, ${lng.toFixed(4)}</a>`;
+}
+
+</script>
+</body>
+</html>
