@@ -1,35 +1,31 @@
-
-from flask import Flask
-import os
-
-app = Flask(__name__, static_folder="static", static_url_path="")
-
-# ✅ بعدها تحط secret key
-app.secret_key = os.environ.get("SECRET_KEY", "super-secret-key")
-
-
-# DON'T CHANGE THIS !!!
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 from flask import Flask, send_from_directory, session, redirect, url_for, jsonify, request
 from flask_cors import CORS
 from models.database import db
+import os
+import sys
 
+# ✅ تعريف app مرة واحدة فقط
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
-app.config["SECRET_KEY"] = "asdf#FGSgvasgf$5$WGT"
+
+# ✅ إعدادات
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "super-secret-key")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = 86400  # 24 hours
+app.config["PERMANENT_SESSION_LIFETIME"] = 86400
 app.config["SESSION_COOKIE_NAME"] = "attendance_sid"
-# تعطيل القيود الصارمة للكوكيز لضمان عملها خلف الـ Proxy
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = False
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.path.dirname(__file__), 'instance', 'attendance.db')
 
-print("DB FILE:", app.config['SQLALCHEMY_DATABASE_URI'])  # ✅ هنا
+# ✅ قاعدة البيانات
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.path.dirname(__file__), 'instance', 'attendance.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# تفعيل CORS مع دعم الـ credentials
-CORS(app, supports_credentials=True, origins=['*'], allow_headers=['*'])
+print("DB FILE:", app.config['SQLALCHEMY_DATABASE_URI'])
+
+# ✅ CORS
+CORS(app, supports_credentials=True, origins=['*'])
+
+# ✅ sys path
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # معالج لضمان استمرارية الجلسة
 @app.before_request
@@ -190,52 +186,15 @@ def admin_page():
 
     return send_from_directory(app.static_folder, 'admin.html')
 
-
 @app.route("/")
 def index():
-    """الصفحة الرئيسية"""
-    # إذا لم يكن هناك جلسة، توجه لصفحة تسجيل الدخول
     if "user_id" not in session:
         return redirect(url_for("login_page"))
-    
-    # السماح للمديرين والأدمن بالوصول لصفحة التيم شيت (index.html) إذا طلبوا المسار الرئيسي
-    # وإذا أرادوا الذهاب للوحة الإدارة يمكنهم ذلك عبر رابط مباشر أو زر في الواجهة
     return send_from_directory(app.static_folder, "index.html")
-
-
 @app.route("/login")
 def login_page():
-    """صفحة تسجيل الدخول"""
-    # إذا كان مسجل دخول بالفعل، وجهه للصفحة المناسبة
     if "user_id" in session:
         return redirect(url_for("index"))
     return send_from_directory(app.static_folder, "login.html")
-
-
-@app.route("/<path:path>")
-def serve_static(path):
-    """خدمة الملفات الثابتة"""
-    if path == "login.html":
-        return send_from_directory(app.static_folder, "login.html")
-    if "user_id" not in session:
-        return redirect(url_for("index"))
-    return send_from_directory(app.static_folder, path)
-
-from flask import Flask
-
-app = Flask(__name__, static_folder="static", static_url_path="")
-
-# ✅ الصفحة الرئيسية
-
-@app.route("/")
-def home():
-    return app.send_static_file("index.html")
-
-# ✅ صفحة login
-@app.route("/login")
-def login_page():
-    return app.send_static_file("login.html")
-
 if __name__ == "__main__":
     app.run(debug=True)
-
