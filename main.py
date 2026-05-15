@@ -21,35 +21,24 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = False
 
 # =========================
-# ✅ DATABASE (attendance.db + Render)
+# =========================
+# ✅ DATABASE (Force SQLite)
 # =========================
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-
-# تأكد إن الفولدر موجود
 os.makedirs(os.path.join(base_dir, "instance"), exist_ok=True)
 
-db_url = os.environ.get("DATABASE_URL")
+sqlite_path = os.path.join(base_dir, "instance", "attendance.db")
 
-if db_url:
-    # ✅ Render → PostgreSQL
-    if db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql://", 1)
-
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-    print("✅ Using PostgreSQL (Render)")
-
-else:
-    # ✅ Local → attendance.db
-    sqlite_path = os.path.join(base_dir, "instance", "attendance.db")
-    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{sqlite_path}"
-    print("✅ Using attendance.db (Local)")
-
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{sqlite_path}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# ✅ ربط DB
+print("✅ Using SQLite (Render TEST MODE)")
+
 db.init_app(app)
 
+with app.app_context():
+    db.create_all()
 # =========================
 # ✅ CORS
 # =========================
