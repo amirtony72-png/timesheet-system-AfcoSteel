@@ -1,6 +1,12 @@
+
+from flask import Flask
 import os
+
+app = Flask(__name__, static_folder="static", static_url_path="")
+
+# ✅ بعدها تحط secret key
 app.secret_key = os.environ.get("SECRET_KEY", "super-secret-key")
-import sys
+
 
 # DON'T CHANGE THIS !!!
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -220,6 +226,7 @@ from flask import Flask
 app = Flask(__name__, static_folder="static", static_url_path="")
 
 # ✅ الصفحة الرئيسية
+
 @app.route("/")
 def home():
     return app.send_static_file("index.html")
@@ -231,3 +238,4 @@ def login_page():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
