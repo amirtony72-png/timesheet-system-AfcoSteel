@@ -4,7 +4,6 @@ from models.database import db
 import os
 import sys
 
-# ✅ تعريف app مرة واحدة فقط
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 
 # ✅ إعدادات
@@ -15,17 +14,23 @@ app.config["SESSION_COOKIE_NAME"] = "attendance_sid"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = False
 
-# ✅ قاعدة البيانات
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.path.dirname(__file__), 'instance', 'attendance.db')
+# ✅ PostgreSQL Fix
+db_url = os.environ.get("DATABASE_URL")
+
+if db_url and db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-print("DB FILE:", app.config['SQLALCHEMY_DATABASE_URI'])
+print("DB URL:", db_url)
 
 # ✅ CORS
 CORS(app, supports_credentials=True, origins=['*'])
 
 # ✅ sys path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 
 # معالج لضمان استمرارية الجلسة
 @app.before_request
