@@ -22,9 +22,8 @@ app.config["SESSION_COOKIE_SECURE"] = False
 # =========================
 # ✅ DATABASE
 # =========================
-db_url = os.environ.get("DATABASE_URL")
 
-print("DATABASE_URL:", db_url)
+db_url = os.environ.get("DATABASE_URL")
 
 if not db_url:
     raise Exception("DATABASE_URL is missing ❌")
@@ -34,6 +33,26 @@ if db_url.startswith("postgres://"):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+
+# ✅ إجبار context
+app.app_context().push()
+
+# =========================
+# ✅ BLUEPRINTS
+# =========================
+from routes.user import user_bp
+from routes.admin import admin_bp
+from routes.timesheet_advanced import timesheet_advanced_bp
+from routes.advanced_features import advanced_bp
+from routes.features_v76 import features_v76_bp
+
+app.register_blueprint(user_bp)
+app.register_blueprint(admin_bp)
+app.register_blueprint(timesheet_advanced_bp)
+app.register_blueprint(advanced_bp)
+app.register_blueprint(features_v76_bp)
 
 # =========================
 # ✅ CORS
@@ -52,20 +71,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 def before_request():
     session.permanent = True
 
-# =========================
-# ✅ BLUEPRINTS
-# =========================
-from routes.user import user_bp
-from routes.admin import admin_bp
-from routes.timesheet_advanced import timesheet_advanced_bp
-from routes.advanced_features import advanced_bp
-from routes.features_v76 import features_v76_bp
-
-app.register_blueprint(user_bp)
-app.register_blueprint(admin_bp)
-app.register_blueprint(timesheet_advanced_bp)
-app.register_blueprint(advanced_bp)
-app.register_blueprint(features_v76_bp)
 
 # =========================
 # ✅ FILES
